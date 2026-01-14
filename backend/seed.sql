@@ -1,0 +1,76 @@
+-- =========================
+-- ASSIGNMENT STATUS LOOKUP
+-- =========================
+INSERT INTO event_duty_assignment_status (id, name) VALUES
+  (1, 'assigned'),
+  (2, 'completed'),
+  (3, 'rejected'),
+  (4, 'auto_rejected');
+
+-- =========================
+-- BROTHERS
+-- =========================
+-- name, previous_semester_points, active, assignable
+
+INSERT INTO brother (name, previous_semester_points, active, assignable)
+VALUES
+('Aditya Bilawar', 165, 1, 1),
+('Alessandro Ferrari', 59, 1, 1),
+('Alexander Frawley', 281, 1, 1),
+('Arin Khanna', 54, 1, 1),
+('Ashish Dewal', 173, 1, 1),
+('Bryce Kelly', 536, 1, 1),
+('Cade Richard', 179, 1, 1),
+('Christopher Goggins', 130, 1, 1),
+('Davin Aoyama', 150, 1, 1),
+('Elliott Barthel', 0, 1, 1),
+('Ethan Hulewicz', 319, 1, 0),
+('Ethan Lam', 0, 1, 1),
+('Evan McCarty', 457, 1, 1),
+('Everett Smith', 0, 1, 1),
+('Gavin Mathieu', 113, 1, 1),
+('Henry Lott', 165, 1, 1),
+('Hersh Pamnani', 0, 1, 0),
+('Jack Stoltz', 0, 1, 1),
+('Jacob Pullen', 0, 1, 1),
+('Jacob Ma', 0, 1, 1),
+('James Porter', 287, 1, 1),
+('James Soule', 0, 1, 1),
+('Jason Lai', 149, 1, 1),
+('Jason Barachina', 0, 1, 1),
+('John Lewis', 928, 1, 1),
+('Joseph Townsend', 314, 1, 1),
+('Justin Xia', 352, 1, 1),
+('Liam Streleckis', 261, 1, 1),
+('Malhar Kamat', 79, 1, 1),
+('Marcus Kim', 108, 1, 1),
+('Mio Achache', 79, 1, 1),
+('Muhammad Atif', 44, 1, 1),
+('Nathan Tai', 344, 1, 1),
+('Nicholas Carlsson', 0, 1, 1),
+('Nic Young', 104, 1, 1),
+('Parker Oelrich', 113, 1, 1),
+('Rui Lyu Chang', 1035, 1, 1),
+('Sam Kim', 76, 1, 1),
+('Sawyer Miyake', 174, 1, 1),
+('Sergey Sachko', 0, 1, 1),
+('Tanay Kapoor', 125, 1, 1),
+('Tommy Arthur', 0, 1, 1),
+('Tyler Schnell', 159, 1, 1),
+('Vedesh Yadlapalli', 102, 1, 1),
+('Walker Helms', 100, 1, 1),
+('Xander Golubic', 149, 1, 0),
+('Zachary Shapiro', 56, 1, 1),
+('Zachary Reed', 127, 1, 1),
+('Zhengyu Liu', 139, 1, 1),
+('Michael Porter', 287, 1, 1),
+('Yan Tsenter', 55, 0, 0),
+('Antonio Ferreira', 70, 0, 0),
+('Bryan', 135, 0, 0),
+('Rishi Nopany', 148, 0, 0),
+('Anthony Natarella', 152, 0, 0),
+('Tyson Brown', 257, 0, 0),
+('Jay Townsend', 314, 0, 0),
+('Dylan Curran', 387, 0, 0),
+('Quinn O''Connell', 471, 0, 0),
+('Joe Shulman', 537, 0, 0);
