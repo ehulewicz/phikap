@@ -8,12 +8,15 @@ CREATE TABLE brother (
     additional_points INTEGER NOT NULL DEFAULT 0,
     duty_points INTEGER NOT NULL DEFAULT 0,
 
-    active INTEGER NOT NULL DEFAULT 1,
-    assignable INTEGER NOT NULL DEFAULT 1,
+    role_id INTEGER NOT NULL DEFAULT 1,
 
-    CHECK (active IN (0, 1)),
-    CHECK (assignable IN (0, 1)),
-    CHECK (NOT (active = 0 AND assignable = 1))
+    FOREIGN KEY (role_id) REFERENCES role(id)
+);
+
+-- roles
+CREATE TABLE role (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE
 );
 
 -- duty types
@@ -36,7 +39,7 @@ CREATE TABLE duty_definition (
 CREATE TABLE event_type (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    social_team_points INTEGER NOT NULL DEFAULT 0
+    chair_points INTEGER NOT NULL DEFAULT 10
 );
 
 -- default event duties
@@ -82,7 +85,7 @@ CREATE TABLE event_duty (
 
 -- assignment status lookup
 CREATE TABLE event_duty_assignment_status (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE
 );
 
