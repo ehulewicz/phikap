@@ -36,7 +36,7 @@ VALUES
 ('Ethan Hulewicz', 319, 4, '2247164791'),
 ('Ethan Lam', 0, 1, '4045109889'),
 ('Evan McCarty', 457, 1, '6788232157'),
-('Everett Smith', 0, 1, '6787104760'),
+('Rett Smith', 123, 1, '6787104760'),
 ('Gavin Mathieu', 113, 1, '6786284098'),
 ('Henry Lott', 165, 1, '4045587421'),
 ('Hersh Pamnani', 0, 4, '4703017278'),
@@ -195,7 +195,7 @@ INSERT INTO event_type_duty (event_type_id, duty_definition_id, default_points, 
   (2, 28, 3, 2),  -- Fix couches
   (2, 38, 7, 2),  -- Take apart sound system and lights
   (2, 39, 5, 2),  -- Return subwoofer
-  (2, 52, 30, 5), -- Sober monitor
+  (2, 52, 30, 4), -- Sober monitor
   (2, 55, 10, 1), -- DJ
   (3, 8, 3, 2),   -- Rearrange couches
   (3, 18, 8, 2),  -- Set up sound system and lights
@@ -262,3 +262,62 @@ INSERT INTO event_type_duty (event_type_id, duty_definition_id, default_points, 
   (6, 32, 8, 1), (6, 33, 5, 1), (6, 34, 5, 1), (6, 35, 5, 1), (6, 36, 6, 1), (6, 37, 6, 1),
   (6, 42, 8, 1), (6, 43, 8, 1), (6, 44, 8, 1), (6, 45, 8, 1), (6, 47, 5, 1), (6, 48, 5, 1),
   (6, 53, 10, 2);
+
+-- =========================
+-- SAMPLE EVENT + DUTIES
+-- =========================
+INSERT INTO event (name, event_type_id, date, start_time, end_time)
+VALUES ('Philigher', 2, '2026-01-24', '22:00', '02:00');
+
+-- Setup duties (due by 20:00)
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, due_time)
+SELECT e.id, 4, 6, 4, '20:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, due_time)
+SELECT e.id, 18, 8, 2, '20:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, due_time)
+SELECT e.id, 20, 5, 2, '20:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, due_time)
+SELECT e.id, 5, 6, 4, '20:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+
+-- Purchase duties (due by 21:00)
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, due_time)
+SELECT e.id, 42, 8, 1, '21:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, due_time)
+SELECT e.id, 43, 8, 1, '21:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, due_time)
+SELECT e.id, 44, 8, 1, '21:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+
+-- Cleanup duties (due by 12:00)
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, due_time)
+SELECT e.id, 26, 8, 2, '12:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, due_time)
+SELECT e.id, 38, 7, 2, '12:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, due_time)
+SELECT e.id, 39, 5, 2, '12:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+
+-- Pregame (21:00-22:00)
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, start_time, end_time)
+SELECT e.id, 53, 10, 1, '21:00', '22:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, start_time, end_time)
+SELECT e.id, 52, 10, 1, '21:00', '22:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+
+-- During (22:00-02:00) Door + DJ slots
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, start_time, end_time)
+SELECT e.id, 53, 10, 3, '22:00', '23:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, start_time, end_time)
+SELECT e.id, 54, 10, 1, '22:00', '23:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, start_time, end_time)
+SELECT e.id, 53, 10, 3, '23:00', '00:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, start_time, end_time)
+SELECT e.id, 54, 10, 1, '23:00', '00:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, start_time, end_time)
+SELECT e.id, 53, 10, 3, '00:00', '01:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, start_time, end_time)
+SELECT e.id, 54, 10, 1, '00:00', '01:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, start_time, end_time)
+SELECT e.id, 53, 10, 3, '01:00', '02:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, start_time, end_time)
+SELECT e.id, 54, 10, 1, '01:00', '02:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';

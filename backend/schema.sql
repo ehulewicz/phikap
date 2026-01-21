@@ -78,6 +78,9 @@ CREATE TABLE event_duty (
 
     points INTEGER NOT NULL,
     required_brothers INTEGER NOT NULL,
+    due_time TEXT,
+    start_time TEXT,
+    end_time TEXT,
 
     FOREIGN KEY (event_id) REFERENCES event(id),
     FOREIGN KEY (duty_definition_id) REFERENCES duty_definition(id)
