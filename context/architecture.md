@@ -133,22 +133,23 @@ ________________________________________________________________________________
                 - Adminms will still the see the complete button and have the ability to click that (which will also flip off rejected and allow users to see completed again)
 
     - Duty Status for purchase/setup/cleanup
-        - Display 'assigned' before due time
+        - Display 'signed_up' for brothers who volunteered before lock
+        - Display 'assigned' for auto-filled slots after lock
         - Display 'late' between 5 minutes - 1 hour after setup
         - At one hour display 'rejected'
         - If completed display 'completed' then
+        - Brothers can drop a 'signed_up' duty until Monday 8pm (lock time)
     - Duty Status for during
         - Display 'assigned' until otherwise set by admins
         - Upon marking as completed/rejected dispaly that
 
-    - 5pm on Sunday the week BEFORE the event:
-        - duties will be unlocked and evailable for signup
-        - send an @channel in slack ACTIVES_ANNOUNCMENTS including all the people who were fined for not completing a duty in the last week (public shaming)
-        - send a dm to chris goggins to notify the people he needs to fine and the ammounts
-    - At 7:30pm on Wednesday STILL THE WEEK BEFORE THE EVENT, duty signup will be locked open duties will be assigned 
+    - Sunday 8pm of the event week:
+        - duties are unlocked and available for signup
+    - Monday 8pm of the event week:
+        - duty signup is locked and open duties are assigned
 
     - Duties will be assigned in this order:
-        - DUTIES WILL NOT BE ASSIGNED TO BROTHERS WITH THE SOCIAL TEAM ROLL
+        - DUTIES WILL ONLY BE ASSIGNED TO ACTIVE BROTHERS
         - Social_team/admin will receive the given admin points for each event after event date passes
 
         - Duties with highest points will be assigned first to brothers with the lowest amount of points
@@ -192,6 +193,9 @@ ________________________________________________________________________________
     - Add new event type defintion
         - duties
         - edit default points/spots
+    - Testing controls
+        - Button: Unlock this week (sets duties_unlocked for current week)
+        - Button: Assign this week (auto-assigns open duties for current week)
 
 
 

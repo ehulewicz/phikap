@@ -63,4 +63,8 @@ export const paths = {
 		reset: () => `${trim(apiBase)}/auth/reset`,
 		update: () => `${trim(apiBase)}/auth`,
 	},
+	admin: {
+		unlockWeek: () => `${trim(apiBase)}/admin/assignments/unlock-week`,
+		assignWeek: () => `${trim(apiBase)}/admin/assignments/assign-week`,
+	},
 };

@@ -8,6 +8,7 @@ import {
 	AssignmentList,
 	AssignmentUpdate,
 } from "./endpoints/assignments";
+import { AdminAssignWeek, AdminUnlockWeek } from "./endpoints/adminAssignments";
 import { BrotherList, BrotherPointsCreate } from "./endpoints/brothers";
 import {
 	DutyDefinitionCreate,
@@ -79,6 +80,10 @@ openapi.get("/assignments", AssignmentList);
 openapi.post("/assignments", AssignmentCreate);
 openapi.put("/assignments/:assignment_id", AssignmentUpdate);
 openapi.delete("/assignments/:assignment_id", AssignmentDelete);
+
+// Admin assignment utilities (testing)
+openapi.post("/admin/assignments/unlock-week", AdminUnlockWeek);
+openapi.post("/admin/assignments/assign-week", AdminAssignWeek);
 
 // Duty Types
 openapi.get("/dutyTypes", DutyTypeList);

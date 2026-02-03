@@ -2,6 +2,7 @@
 -- ASSIGNMENT STATUS LOOKUP
 -- =========================
 INSERT INTO event_duty_assignment_status (name) VALUES
+  ('signed_up'),
   ('assigned'),
   ('completed'),
   ('late'),
@@ -91,12 +92,13 @@ INSERT INTO duty_type (name) VALUES
 -- EVENT DEFINITIONS
 -- =========================
 INSERT INTO event_definition (name, admin_points) VALUES
-  ('BPK', 10),
-  ('Open party', 20),
+  ('BPK', 15),
+  ('Open party', 25),
   ('Closed party', 20),
-  ('Date night', 10),
-  ('Pong tourney', 10),
-  ('Tailgate', 10);
+  ('Date night', 15),
+  ('Pong tourney', 15),
+  ('Tailgate', 15),
+  ('Special', 0);
 
 -- =========================
 -- DUTY DEFINITIONS
@@ -294,19 +296,40 @@ SELECT e.id, 54, 10, 1, '21:00' FROM event e WHERE e.name = 'Weekly Social - Thi
 
 -- Assignment for last week (completed)
 INSERT INTO event_duty_assignment (event_duty_id, brother_id, status_id)
-SELECT ed.id, b.id, 2
+SELECT ed.id, b.id, s.id
 FROM event_duty ed
 JOIN event e ON e.id = ed.event_id
-JOIN brother b ON b.slack_id = 'seed_1'
+JOIN brother b ON b.slack_id = 'U06F0AFB8F7'
+JOIN event_duty_assignment_status s ON s.name = 'completed'
 WHERE e.name = 'Weekly Social - Last Week (Sat)' AND e.date = '2026-01-31'
 LIMIT 1;
 
 INSERT INTO event_duty_assignment (event_duty_id, brother_id, status_id)
-SELECT ed.id, b.id, 2
+SELECT ed.id, b.id, s.id
 FROM event_duty ed
 JOIN event e ON e.id = ed.event_id
-JOIN brother b ON b.slack_id = 'seed_2'
+JOIN brother b ON b.slack_id = 'U08996EQFSS'
+JOIN event_duty_assignment_status s ON s.name = 'completed'
 WHERE e.name = 'Weekly Social - Last Week (Sun)' AND e.date = '2026-02-01'
+LIMIT 1;
+
+-- Assignments for this week (signed up + assigned)
+INSERT INTO event_duty_assignment (event_duty_id, brother_id, status_id)
+SELECT ed.id, b.id, s.id
+FROM event_duty ed
+JOIN event e ON e.id = ed.event_id
+JOIN brother b ON b.slack_id = 'U0400NY44DS'
+JOIN event_duty_assignment_status s ON s.name = 'signed_up'
+WHERE e.name = 'Weekly Social - This Week' AND e.date = '2026-02-05'
+LIMIT 1;
+
+INSERT INTO event_duty_assignment (event_duty_id, brother_id, status_id)
+SELECT ed.id, b.id, s.id
+FROM event_duty ed
+JOIN event e ON e.id = ed.event_id
+JOIN brother b ON b.slack_id = 'U04L0MWLR27'
+JOIN event_duty_assignment_status s ON s.name = 'assigned'
+WHERE e.name = 'Weekly Social - This Week' AND e.date = '2026-02-05'
 LIMIT 1;
 
 -- =========================

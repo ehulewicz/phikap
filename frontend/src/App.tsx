@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import "./App.css";
 import { buildQuery, fetchJson } from "./api/client";
 import { paths } from "./api/paths";
@@ -25,6 +25,7 @@ type EventItem = {
 	date: string;
 	start_time: string;
 	end_time: string;
+	duties_unlocked: number;
 };
 
 type Duty = {
@@ -44,6 +45,8 @@ type Assignment = {
 	event_duty_id: number;
 	brother_id: number;
 	status_id: number;
+	status_name?: string;
+	brother_name?: string;
 };
 
 type EventDefinition = {
@@ -73,15 +76,6 @@ type EventDefinitionDuty = {
 	default_required_brothers: number;
 };
 
-type EventDutyRecord = {
-	id: number;
-	event_id: number;
-	duty_definition_id: number;
-	points: number;
-	required_brothers: number;
-	time: string;
-};
-
 function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authSubmitting, setAuthSubmitting] = useState(false);
@@ -100,6 +94,7 @@ function App() {
   const [brothersLoading, setBrothersLoading] = useState(false);
   const [loadingDuties, setLoadingDuties] = useState(false);
   const [submittingDutyId, setSubmittingDutyId] = useState<number | null>(null);
+  const [droppingAssignmentId, setDroppingAssignmentId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [roleFilters, setRoleFilters] = useState<Array<"active" | "inactive" | "senior">>([
@@ -119,15 +114,16 @@ function App() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [weekEvents, setWeekEvents] = useState<EventItem[]>([]);
-  const [weekendAssignments, setWeekendAssignments] = useState<
+  const [weekAssignments, setWeekAssignments] = useState<
     Array<{
       event: EventItem;
       duty: Duty;
-      assignments: Assignment[];
+      assignment: Assignment;
     }>
   >([]);
+  const [weekRefreshTick, setWeekRefreshTick] = useState(0);
   const [adminEntity, setAdminEntity] = useState<
-    "event_definitions" | "events" | "duty_definitions" | "duties"
+    "event_definitions" | "events" | "duty_definitions"
   >("events");
   const [adminItemId, setAdminItemId] = useState<number | "new">("new");
   const [adminLoading, setAdminLoading] = useState(false);
@@ -168,11 +164,6 @@ function App() {
   const [dutyDefinitionDescription, setDutyDefinitionDescription] = useState("");
   const [dutyDefinitionPoints, setDutyDefinitionPoints] = useState("");
   const [dutyDefinitionRequired, setDutyDefinitionRequired] = useState("");
-  const [dutyFormEventId, setDutyFormEventId] = useState<number | "">("");
-  const [dutyFormDefinitionId, setDutyFormDefinitionId] = useState<number | "">("");
-  const [dutyFormPoints, setDutyFormPoints] = useState("");
-  const [dutyFormRequired, setDutyFormRequired] = useState("");
-  const [dutyFormTime, setDutyFormTime] = useState("");
 
   useEffect(() => {
     const storedSlackId = localStorage.getItem("phikap_slack_id");
@@ -325,7 +316,9 @@ function App() {
     : undefined;
   const displayBrother = selectedBrother ?? currentBrother;
   const isAdmin = (displayBrother?.role_id ?? currentBrother?.role_id) === 4;
-  const selectedEvent = events.find((event) => event.id === selectedEventId);
+  const selectedEvent = selectedEventId
+    ? events.find((event) => event.id === selectedEventId)
+    : null;
 
   const roleOptions = [
     { key: "active" as const, label: "Active" },
@@ -385,12 +378,6 @@ function App() {
     return map;
   }, [events]);
 
-  const eventNameById = useMemo(() => {
-    const map = new Map<number, string>();
-    events.forEach((event) => map.set(event.id, event.name));
-    return map;
-  }, [events]);
-
   const dutyTypeNameById = useMemo(() => {
     const map = new Map<number, string>();
     dutyTypes.forEach((type) => map.set(type.id, type.name));
@@ -402,6 +389,23 @@ function App() {
     dutyDefinitions.forEach((definition) => map.set(definition.id, definition));
     return map;
   }, [dutyDefinitions]);
+
+  const sortedDutyDefinitions = useMemo(() => {
+    const order = ["Purchase", "Setup", "During", "Cleanup"];
+    const orderIndex = new Map(order.map((label, index) => [label, index]));
+    return [...dutyDefinitions].sort((a, b) => {
+      const aType = dutyTypeNameById.get(a.duty_type_id) ?? "";
+      const bType = dutyTypeNameById.get(b.duty_type_id) ?? "";
+      const aIdx = orderIndex.has(aType) ? orderIndex.get(aType)! : order.length;
+      const bIdx = orderIndex.has(bType) ? orderIndex.get(bType)! : order.length;
+      if (aIdx !== bIdx) return aIdx - bIdx;
+      const aDesc = a.description.toLowerCase();
+      const bDesc = b.description.toLowerCase();
+      if (aDesc < bDesc) return -1;
+      if (aDesc > bDesc) return 1;
+      return a.id - b.id;
+    });
+  }, [dutyDefinitions, dutyTypeNameById]);
 
   const eventDutiesForSelected = useMemo(() => {
     if (adminEntity !== "events" || adminItemId === "new") return [];
@@ -457,26 +461,19 @@ function App() {
       }));
     }
     if (adminEntity === "duty_definitions") {
-      return dutyDefinitions.map((definition) => ({
+      return sortedDutyDefinitions.map((definition) => ({
         id: definition.id,
         label: `${definition.description} · ${
           dutyTypeNameById.get(definition.duty_type_id) ?? `Type ${definition.duty_type_id}`
         }`,
       }));
     }
-    return adminDuties.map((duty) => ({
-      id: duty.id,
-      label: `${eventNameById.get(duty.event_id) ?? `Event ${duty.event_id}`} · ${
-        duty.description
-      }`,
-    }));
+    return [];
   }, [
     adminEntity,
-    adminDuties,
-    dutyDefinitions,
+    sortedDutyDefinitions,
     dutyTypeNameById,
     eventDefinitions,
-    eventNameById,
     events,
   ]);
 
@@ -548,20 +545,22 @@ function App() {
     return { start, end };
   };
 
-  const getLastWeekendRange = (baseDate: Date) => {
-    const day = baseDate.getDay();
-    const lastSunday = new Date(baseDate);
-    lastSunday.setDate(baseDate.getDate() - day);
-    lastSunday.setHours(23, 59, 59, 999);
-    const lastSaturday = new Date(baseDate);
-    lastSaturday.setDate(baseDate.getDate() - day - 1);
-    lastSaturday.setHours(0, 0, 0, 0);
-    return { start: lastSaturday, end: lastSunday };
+  const getWeekendRange = (baseDate: Date) => {
+    const week = getWeekRange(baseDate);
+    const start = new Date(week.start);
+    start.setDate(week.start.getDate() + 4);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(week.start);
+    end.setDate(week.start.getDate() + 7);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
   };
+
+  const currentWeekendRange = useMemo(() => getWeekendRange(new Date()), []);
 
   useEffect(() => {
     const now = new Date();
-    const { start, end } = getWeekRange(now);
+    const { start, end } = getWeekendRange(now);
     const filtered = events.filter((event) => {
       const date = parseDate(event.date);
       return date >= start && date <= end;
@@ -571,21 +570,25 @@ function App() {
 
 
   useEffect(() => {
+    if (!activeBrotherId) {
+      setWeekAssignments([]);
+      return;
+    }
     const now = new Date();
-    const { start, end } = getLastWeekendRange(now);
-    const weekendEvents = events.filter((event) => {
+    const { start, end } = getWeekendRange(now);
+    const weekEvents = events.filter((event) => {
       const date = parseDate(event.date);
       return date >= start && date <= end;
     });
 
-    if (weekendEvents.length === 0) {
-      setWeekendAssignments([]);
+    if (weekEvents.length === 0) {
+      setWeekAssignments([]);
       return;
     }
 
     let active = true;
     Promise.all(
-      weekendEvents.map(async (event) => {
+      weekEvents.map(async (event) => {
         const [dutiesData, assignmentsData] = await Promise.all([
           fetchJson<{ success: boolean; duties: Duty[] }>(
             `${paths.duties.list()}${buildQuery({ event_id: event.id, page: 1, page_size: 100 })}`,
@@ -605,6 +608,10 @@ function App() {
         duties.forEach((duty) => dutyMap.set(duty.id, duty));
 
         return assignments
+          .filter((assignment) => {
+            if (!activeBrotherId) return false;
+            return assignment.brother_id === activeBrotherId;
+          })
           .map((assignment) => {
             const duty = dutyMap.get(assignment.event_duty_id);
             if (!duty) return null;
@@ -620,31 +627,17 @@ function App() {
       .then((result) => {
         if (!active) return;
         const flattened = result.flat();
-        const grouped = new Map<string, { event: EventItem; duty: Duty; assignments: Assignment[] }>();
-        flattened.forEach((item) => {
-          const key = `${item.event.id}-${item.duty.id}`;
-          const existing = grouped.get(key);
-          if (existing) {
-            existing.assignments.push(item.assignment);
-          } else {
-            grouped.set(key, {
-              event: item.event,
-              duty: item.duty,
-              assignments: [item.assignment],
-            });
-          }
-        });
-        setWeekendAssignments(Array.from(grouped.values()));
+        setWeekAssignments(flattened);
       })
       .catch(() => {
         if (!active) return;
-        setWeekendAssignments([]);
+        setWeekAssignments([]);
       });
 
     return () => {
       active = false;
     };
-  }, [events]);
+  }, [events, activeBrotherId, weekRefreshTick]);
 
   const monthLabel = calendarMonth.toLocaleString("en-US", {
     month: "long",
@@ -666,6 +659,27 @@ function App() {
     const suffix = h >= 12 ? "PM" : "AM";
     return `${hour12}:${String(m).padStart(2, "0")} ${suffix}`;
   };
+
+  const formatDay = (dateString: string) => {
+    const date = parseDate(dateString);
+    return date.toLocaleDateString("en-US", { weekday: "long" });
+  };
+
+  const getEventLockTime = (dateString: string) => {
+    const eventDate = parseDate(dateString);
+    const weekStart = new Date(eventDate);
+    weekStart.setDate(eventDate.getDate() - eventDate.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const lockTime = new Date(weekStart);
+    lockTime.setDate(weekStart.getDate() + 1);
+    lockTime.setHours(20, 0, 0, 0);
+    return lockTime;
+  };
+
+  const canDropSelectedEvent = useMemo(() => {
+    if (!selectedEvent) return false;
+    return new Date() < getEventLockTime(selectedEvent.date);
+  }, [selectedEvent]);
 
   const formatDutyTime = (duty: Duty) => {
     return duty.time ? formatTime(duty.time) : "Time TBD";
@@ -713,14 +727,6 @@ function App() {
     setDutyDefinitionDescription("");
     setDutyDefinitionPoints("");
     setDutyDefinitionRequired("");
-  };
-
-  const resetDutyForm = () => {
-    setDutyFormEventId("");
-    setDutyFormDefinitionId("");
-    setDutyFormPoints("");
-    setDutyFormRequired("");
-    setDutyFormTime("");
   };
 
 
@@ -850,8 +856,6 @@ function App() {
       resetEventForm();
     } else if (adminEntity === "duty_definitions") {
       resetDutyDefinitionForm();
-    } else if (adminEntity === "duties") {
-      resetDutyForm();
     }
   }, [adminEntity]);
 
@@ -933,21 +937,6 @@ function App() {
     setDutyDefinitionPoints(String(selected.default_points));
     setDutyDefinitionRequired(String(selected.default_required_brothers));
   }, [adminEntity, adminItemId, dutyDefinitions]);
-
-  useEffect(() => {
-    if (adminEntity !== "duties") return;
-    if (adminItemId === "new") {
-      resetDutyForm();
-      return;
-    }
-    const selected = adminDuties.find((duty) => duty.id === adminItemId);
-    if (!selected) return;
-    setDutyFormEventId(selected.event_id);
-    setDutyFormDefinitionId(selected.duty_definition_id);
-    setDutyFormPoints(String(selected.points));
-    setDutyFormRequired(String(selected.required_brothers));
-    setDutyFormTime(selected.time);
-  }, [adminEntity, adminItemId, adminDuties]);
 
   const handleAdjustmentSubmit = async () => {
     if (!adjustmentBrotherId || !adjustmentEventId || !adjustmentAmount) {
@@ -1254,66 +1243,6 @@ function App() {
         return;
       }
 
-      if (adminEntity === "duties") {
-        if (!dutyFormEventId) {
-          setError("Select an event.");
-          return;
-        }
-        if (!dutyFormDefinitionId) {
-          setError("Select a duty definition.");
-          return;
-        }
-        if (!dutyFormPoints.trim() || !dutyFormRequired.trim()) {
-          setError("Enter points and required brothers.");
-          return;
-        }
-        const points = Number(dutyFormPoints);
-        const required = Number(dutyFormRequired);
-        if (!Number.isFinite(points) || !Number.isFinite(required)) {
-          setError("Points and required brothers must be numbers.");
-          return;
-        }
-        if (!dutyFormTime) {
-          setError("Enter a duty time.");
-          return;
-        }
-
-        if (adminItemId === "new") {
-          const data = await fetchJson<{ success: boolean; duty: EventDutyRecord | null }>(
-            paths.duties.create(),
-            {
-              method: "POST",
-              body: JSON.stringify({
-                event_id: Number(dutyFormEventId),
-                duty_definition_id: Number(dutyFormDefinitionId),
-                points,
-                required_brothers: required,
-                time: dutyFormTime,
-              }),
-            },
-          );
-          await refreshAdminDuties();
-          setNotice("Duty created.");
-          if (data.duty?.id) {
-            setAdminItemId(data.duty.id);
-          } else {
-            resetDutyForm();
-          }
-        } else {
-          await fetchJson(paths.duties.update(adminItemId), {
-            method: "PUT",
-            body: JSON.stringify({
-              event_id: Number(dutyFormEventId),
-              duty_definition_id: Number(dutyFormDefinitionId),
-              points,
-              required_brothers: required,
-              time: dutyFormTime,
-            }),
-          });
-          await refreshAdminDuties();
-          setNotice("Duty updated.");
-        }
-      }
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message || "Unable to save changes.");
@@ -1611,6 +1540,90 @@ function App() {
     }
   };
 
+  const handleDropAssignment = async (assignmentId: number) => {
+    setNotice(null);
+    setError(null);
+    setDroppingAssignmentId(assignmentId);
+    try {
+      await fetchJson(paths.assignments.remove(assignmentId), { method: "DELETE" });
+      const [dutyData, assignmentData] = await Promise.all([
+        fetchJson<{ success: boolean; duties: Duty[] }>(
+          `${paths.duties.list()}${buildQuery({
+            event_id: selectedEventId,
+            page: 1,
+            page_size: 100,
+          })}`,
+        ),
+        fetchJson<{ success: boolean; assignments: Assignment[] }>(
+          `${paths.assignments.list()}${buildQuery({
+            event_id: selectedEventId,
+            page: 1,
+            page_size: 100,
+          })}`,
+        ),
+      ]);
+      setDuties(dutyData.duties ?? []);
+      setAssignments(assignmentData.assignments ?? []);
+      setNotice("Removed from duty.");
+    } catch (err) {
+      if (err instanceof Error) {
+        setNotice(err.message || "Unable to remove assignment.");
+      }
+    } finally {
+      setDroppingAssignmentId(null);
+    }
+  };
+
+  const handleEventClick = (eventId: number, clickEvent: MouseEvent<HTMLButtonElement>) => {
+    if (isAdmin && (clickEvent.ctrlKey || clickEvent.metaKey)) {
+      clickEvent.preventDefault();
+      setView("admin");
+      setAdminEntity("events");
+      setAdminItemId(eventId);
+      return;
+    }
+    setSelectedEventId(eventId);
+    setView("duties");
+  };
+
+  const handleUnlockWeek = async () => {
+    setNotice(null);
+    setError(null);
+    try {
+      const data = await fetchJson<{ success: boolean; updated: number }>(
+        paths.admin.unlockWeek(),
+        { method: "POST" },
+      );
+      setNotice(`Unlocked duties for ${data.updated} event(s) this week.`);
+      await refreshEvents();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || "Unable to unlock duties.");
+      } else {
+        setError("Unable to unlock duties.");
+      }
+    }
+  };
+
+  const handleAssignWeek = async () => {
+    setNotice(null);
+    setError(null);
+    try {
+      const data = await fetchJson<{
+        success: boolean;
+        assignments_created: number;
+      }>(paths.admin.assignWeek(), { method: "POST" });
+      setNotice(`Assigned ${data.assignments_created} duty slots for this week.`);
+      await refreshAdminDuties();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || "Unable to assign duties.");
+      } else {
+        setError("Unable to assign duties.");
+      }
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="page">
@@ -1696,7 +1709,11 @@ function App() {
           <button
             className={`tab ${view === "calendar" ? "active" : ""}`}
             type="button"
-            onClick={() => setView("calendar")}
+            onClick={() => {
+              setCalendarMonth(new Date());
+              setWeekRefreshTick((prev) => prev + 1);
+              setView("calendar");
+            }}
           >
             Home
           </button>
@@ -1777,12 +1794,18 @@ function App() {
                           const assigned = assignmentMap.get(duty.id) ?? [];
                           const assignedCount = duty.assigned_count ?? assigned.length;
                           const isFull = assignedCount >= duty.required_brothers;
-                          const isAssigned = activeBrotherId
-                            ? assigned.some(
-                                (assignment) => assignment.brother_id === activeBrotherId,
-                              )
-                            : false;
-                          const disabled = !activeBrotherId || isFull || isAssigned;
+                          const activeAssignment = activeBrotherId
+                            ? assigned.find((assignment) => assignment.brother_id === activeBrotherId)
+                            : null;
+                          const isAssigned = Boolean(activeAssignment);
+                          const isSignedUp = activeAssignment?.status_name === "signed_up";
+                          const canDrop = Boolean(activeAssignment) && isSignedUp && canDropSelectedEvent;
+                          const isUnlocked = selectedEvent?.duties_unlocked === 1;
+                          const disabled =
+                            !activeBrotherId ||
+                            !isUnlocked ||
+                            isFull ||
+                            (isAssigned && !isSignedUp);
 
                           return (
                             <div className="duty-row" key={duty.id}>
@@ -1792,19 +1815,48 @@ function App() {
                                   {formatDutyTime(duty)} · {duty.points} pts · {assignedCount}/
                                   {duty.required_brothers} filled
                                 </p>
+                                {assignedCount > 0 ? (
+                                  <p className="duty-assignees">
+                                    {(assigned
+                                      .map((assignment) => assignment.brother_name)
+                                      .filter(Boolean) as string[]
+                                    ).join(", ")}
+                                  </p>
+                                ) : null}
                               </div>
                               <div className="duty-actions">
                                 <span className={`pill ${isFull ? "full" : "open"}`}>
                                   {isFull ? "Full" : "Open"}
                                 </span>
-                                <button
-                                  className="ghost"
-                                  type="button"
-                                  onClick={() => handleSignUp(duty.id)}
-                                  disabled={disabled || submittingDutyId === duty.id}
-                                >
-                                  {isAssigned ? "Signed" : isFull ? "Full" : "Sign up"}
-                                </button>
+                                {isSignedUp ? (
+                                  <button
+                                    className="ghost danger"
+                                    type="button"
+                                    onClick={() =>
+                                      activeAssignment
+                                        ? handleDropAssignment(activeAssignment.id)
+                                        : undefined
+                                    }
+                                    disabled={!canDrop || droppingAssignmentId === activeAssignment?.id}
+                                  >
+                                    {canDrop ? "Drop" : "Locked"}
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="ghost"
+                                    type="button"
+                                    onClick={() => handleSignUp(duty.id)}
+                                    disabled={disabled || submittingDutyId === duty.id}
+                                  >
+                                    {!isUnlocked
+                                      ? "Locked"
+                                      : isAssigned
+                                        ? "Assigned"
+                                        : isFull
+                                          ? "Full"
+                                          : "Sign up"}
+                                  </button>
+                                )}
                               </div>
                             </div>
                           );
@@ -1819,10 +1871,10 @@ function App() {
 
           {view === "calendar" ? (
             <div className="calendar">
-              <div className="calendar-section">
-                <div className="calendar-section-title">Current Week</div>
+              <div className="calendar-section current-week">
+                <div className="calendar-section-title">This Week Events</div>
                 {weekEvents.length === 0 ? (
-                  <div className="empty">No events this week.</div>
+                  <div className="empty">No events scheduled this week.</div>
                 ) : (
                   <div className="week-events">
                     {weekEvents.map((event) => (
@@ -1830,17 +1882,14 @@ function App() {
                         <div>
                           <p className="event-title">{event.name}</p>
                           <p className="event-time">
-                            {event.date} · {formatTime(event.start_time)} –{" "}
+                            {formatDay(event.date)} · {formatTime(event.start_time)} –{" "}
                             {formatTime(event.end_time)}
                           </p>
                         </div>
                         <button
                           className="ghost"
                           type="button"
-                          onClick={() => {
-                            setSelectedEventId(event.id);
-                            setView("duties");
-                          }}
+                          onClick={(eventClick) => handleEventClick(event.id, eventClick)}
                         >
                           View duties
                         </button>
@@ -1869,32 +1918,29 @@ function App() {
                   const dateKey = cell.date.toISOString().slice(0, 10);
                   const dayEvents = eventsByDate.get(dateKey) ?? [];
                   const isToday = dateKey === todayKey;
+                  const isCurrentWeek =
+                    cell.date >= currentWeekendRange.start &&
+                    cell.date <= currentWeekendRange.end;
                   return (
                     <div
                       key={`${dateKey}-${cell.inMonth ? "in" : "out"}`}
                       className={`calendar-cell ${cell.inMonth ? "in" : "out"} ${
                         isToday ? "today" : ""
-                      }`}
+                      } ${isCurrentWeek ? "current-week" : ""}`}
                     >
                       <div className="calendar-day-number">{cell.date.getDate()}</div>
                       {dayEvents.length > 0 ? (
                         <div className="calendar-events">
-                          {dayEvents.slice(0, 2).map((event) => (
-                            <button
-                              key={event.id}
-                              type="button"
-                              className="calendar-event"
-                              onClick={() => {
-                                setSelectedEventId(event.id);
-                                setView("duties");
-                              }}
-                            >
-                              {event.name}
-                            </button>
-                          ))}
-                          {dayEvents.length > 2 ? (
-                            <span className="calendar-more">+{dayEvents.length - 2} more</span>
-                          ) : null}
+                          <button
+                            key={dayEvents[0].id}
+                            type="button"
+                            className="calendar-event"
+                            onClick={(eventClick) =>
+                              handleEventClick(dayEvents[0].id, eventClick)
+                            }
+                          >
+                            {dayEvents[0].name}
+                          </button>
                         </div>
                       ) : null}
                     </div>
@@ -1903,25 +1949,31 @@ function App() {
               </div>
 
               <div className="calendar-section">
-                <div className="calendar-section-title">Last Weekend Assignments</div>
-                {weekendAssignments.length === 0 ? (
-                  <div className="empty">No assignments last weekend.</div>
+                <div className="calendar-section-title">My Duties This Week</div>
+                {weekAssignments.length === 0 ? (
+                  <div className="empty">No duties this week.</div>
                 ) : (
                   <div className="weekend-assignments">
-                    {weekendAssignments.map((item) => (
-                      <div className="assignment-card" key={`${item.event.id}-${item.duty.id}`}>
-                        <div>
-                          <p className="event-title">{item.duty.description}</p>
-                          <p className="event-time">
-                            {item.event.name} · {item.event.date} ·{" "}
-                            {formatTime(item.duty.time)}
-                          </p>
+                    {weekAssignments.map((item) => {
+                      const isAssigned = item.assignment.status_name === "assigned";
+                      return (
+                        <div
+                          className={`assignment-card ${isAssigned ? "assigned" : "signed"}`}
+                          key={`${item.event.id}-${item.duty.id}-${item.assignment.id}`}
+                        >
+                          <div>
+                            <p className="event-title">{item.duty.description}</p>
+                            <p className="event-time">
+                              {item.event.name} · {item.event.date} ·{" "}
+                              {formatTime(item.duty.time)}
+                            </p>
+                          </div>
+                          <span className="assignment-count">
+                            {isAssigned ? "Assigned" : "Signed up"}
+                          </span>
                         </div>
-                        <span className="assignment-count">
-                          {item.assignments.length} assigned
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -2077,6 +2129,14 @@ function App() {
           {view === "admin" ? (
             <div className="admin">
               <div className="admin-controls">
+                <div className="admin-quick-actions">
+                  <button className="ghost" type="button" onClick={handleUnlockWeek}>
+                    Unlock this week
+                  </button>
+                  <button className="ghost" type="button" onClick={handleAssignWeek}>
+                    Assign this week
+                  </button>
+                </div>
                 <div className="select-pill">
                   <label htmlFor="admin-entity">Manage</label>
                   <select
@@ -2087,15 +2147,13 @@ function App() {
                         event.target.value as
                           | "event_definitions"
                           | "events"
-                          | "duty_definitions"
-                          | "duties",
+                          | "duty_definitions",
                       )
                     }
                   >
                     <option value="events">Events</option>
                     <option value="event_definitions">Event definitions</option>
                     <option value="duty_definitions">Duty definitions</option>
-                    <option value="duties">Duties</option>
                   </select>
                 </div>
                 <div className="select-pill">
@@ -2115,11 +2173,6 @@ function App() {
                       </option>
                     ))}
                   </select>
-                </div>
-                <div className="admin-hint">
-                  {adminLoading
-                    ? "Loading admin data…"
-                    : "Pick an item to edit or create something new."}
                 </div>
               </div>
 
@@ -2178,7 +2231,7 @@ function App() {
                                   }
                                 >
                                   <option value="">Select</option>
-                                  {dutyDefinitions.map((definition) => (
+                                  {sortedDutyDefinitions.map((definition) => (
                                     <option key={definition.id} value={definition.id}>
                                       {definition.description} ·{" "}
                                       {dutyTypeNameById.get(definition.duty_type_id) ??
@@ -2349,7 +2402,7 @@ function App() {
                               }
                             >
                               <option value="">Select</option>
-                              {dutyDefinitions.map((definition) => (
+                              {sortedDutyDefinitions.map((definition) => (
                                 <option key={definition.id} value={definition.id}>
                                   {definition.description} ·{" "}
                                   {dutyTypeNameById.get(definition.duty_type_id) ??
@@ -2567,7 +2620,7 @@ function App() {
                               }
                             >
                               <option value="">Select</option>
-                              {dutyDefinitions.map((definition) => (
+                              {sortedDutyDefinitions.map((definition) => (
                                 <option key={definition.id} value={definition.id}>
                                   {definition.description} ·{" "}
                                   {dutyTypeNameById.get(definition.duty_type_id) ??
@@ -2696,94 +2749,6 @@ function App() {
                 </div>
               ) : null}
 
-              {adminEntity === "duties" ? (
-                <div className="admin-card">
-                  <div className="admin-header">
-                    <div>
-                      <p className="admin-overline">Event Duties</p>
-                      <h2>{adminItemId === "new" ? "Create duty" : "Edit duty"}</h2>
-                    </div>
-                    <span className="pill">{adminItemId === "new" ? "New" : "Editing"}</span>
-                  </div>
-                  <form className="admin-form" onSubmit={handleAdminSave}>
-                    <div className="admin-grid">
-                      <div className="select-pill">
-                        <label htmlFor="duty-event">Event</label>
-                        <select
-                          id="duty-event"
-                          value={dutyFormEventId}
-                          onChange={(event) =>
-                            setDutyFormEventId(event.target.value ? Number(event.target.value) : "")
-                          }
-                        >
-                          <option value="">Select</option>
-                          {events.map((event) => (
-                            <option key={event.id} value={event.id}>
-                              {event.name} · {event.date}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="select-pill">
-                        <label htmlFor="duty-definition">Duty definition</label>
-                        <select
-                          id="duty-definition"
-                          value={dutyFormDefinitionId}
-                          onChange={(event) =>
-                            setDutyFormDefinitionId(
-                              event.target.value ? Number(event.target.value) : "",
-                            )
-                          }
-                        >
-                          <option value="">Select</option>
-                          {dutyDefinitions.map((definition) => (
-                            <option key={definition.id} value={definition.id}>
-                              {definition.description} ·{" "}
-                              {dutyTypeNameById.get(definition.duty_type_id) ??
-                                `Type ${definition.duty_type_id}`}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="select-pill">
-                        <label htmlFor="duty-points">Points</label>
-                        <input
-                          id="duty-points"
-                          className="text-input"
-                          type="number"
-                          value={dutyFormPoints}
-                          onChange={(event) => setDutyFormPoints(event.target.value)}
-                        />
-                      </div>
-                      <div className="select-pill">
-                        <label htmlFor="duty-required">Required brothers</label>
-                        <input
-                          id="duty-required"
-                          className="text-input"
-                          type="number"
-                          value={dutyFormRequired}
-                          onChange={(event) => setDutyFormRequired(event.target.value)}
-                        />
-                      </div>
-                      <div className="select-pill">
-                        <label htmlFor="duty-time">Duty time</label>
-                        <input
-                          id="duty-time"
-                          className="text-input"
-                          type="time"
-                          value={dutyFormTime}
-                          onChange={(event) => setDutyFormTime(event.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="admin-actions">
-                      <button className="primary" type="submit">
-                        {adminItemId === "new" ? "Create duty" : "Update duty"}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              ) : null}
             </div>
           ) : null}
         </section>
