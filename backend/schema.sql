@@ -101,6 +101,21 @@ CREATE TABLE event (
     FOREIGN KEY (event_definition_id) REFERENCES event_definition(id)
 );
 
+-- manual points ledger (all adjustments tied to an event)
+CREATE TABLE point_adjustment (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    brother_id INTEGER NOT NULL,
+    event_id INTEGER NOT NULL,
+    amount INTEGER NOT NULL,
+    reason TEXT,
+    created_by INTEGER,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+
+    FOREIGN KEY (brother_id) REFERENCES brother(id),
+    FOREIGN KEY (event_id) REFERENCES event(id),
+    FOREIGN KEY (created_by) REFERENCES brother(id)
+);
+
 -- all duties for a specific event (default and not)
 -- time for the "during" duty type is the start time of the duty (with a 1 hour duration)
 -- time for all other duty types is the due date
@@ -136,3 +151,7 @@ CREATE TABLE event_duty_assignment_status (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE
 );
+
+CREATE INDEX idx_point_adjustment_brother_id ON point_adjustment (brother_id);
+CREATE INDEX idx_point_adjustment_event_id ON point_adjustment (event_id);
+CREATE INDEX idx_point_adjustment_created_at ON point_adjustment (created_at);

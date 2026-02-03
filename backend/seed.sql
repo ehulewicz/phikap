@@ -24,61 +24,59 @@ INSERT INTO role (name) VALUES
 
 INSERT INTO brother (name, last_semester_points, role_id, phone_number, slack_id)
 VALUES
-('Aditya Bilawar', 165, 1, '6097217190', 'seed_1'),
-('Alessandro Ferrari', 59, 3, '6468215621', 'seed_2'),
-('Alexander Frawley', 281, 3, '9179436262', 'seed_3'),
-('Ashish Dewal', 173, 1, '5168704707', 'seed_4'),
-('Bryce Kelly', 536, 1, '6785758735', 'seed_5'),
-('Cade Richard', 179, 1, '6784477027', 'seed_6'),
-('Christopher Goggins', 130, 1, '2023097457', 'seed_7'),
-('Davin Aoyama', 150, 1, '2063042969', 'seed_8'),
-('Elliott Barthel', 0, 1, '6784883763', 'seed_9'),
-('Ethan Hulewicz', 319, 4, '2247164791', 'seed_10'),
-('Ethan Lam', 0, 1, '4045109889', 'seed_11'),
-('Evan McCarty', 457, 1, '6788232157', 'seed_12'),
-('Rett Smith', 123, 1, '6787104760', 'seed_13'),
-('Gavin Mathieu', 113, 1, '6786284098', 'seed_14'),
-('Henry Lott', 165, 1, '4045587421', 'seed_15'),
-('Hersh Pamnani', 0, 4, '4703017278', 'seed_16'),
-('Jack Stoltz', 0, 1, '6467995047', 'seed_17'),
-('Jacob Pullen', 0, 1, '4042813859', 'seed_18'),
-('Jacob Ma', 0, 1, '2163792952', 'seed_19'),
-('James Porter', 287, 1, '4045288285', 'seed_20'),
-('James Soule', 0, 1, '4232772417', 'seed_21'),
-('Jason Lai', 149, 1, '4042453010', 'seed_22'),
-('Jason Barachina', 0, 1, '6783135108', 'seed_23'),
-('John Lewis', 928, 1, '17703355774', 'seed_24'),
-('Joseph Townsend', 314, 1, '6786749338', 'seed_25'),
-('Justin Xia', 352, 3, '3302326880', 'seed_26'),
-('Liam Streleckis', 261, 1, '7708765274', 'seed_27'),
-('Malhar Kamat', 79, 1, '8578290411', 'seed_28'),
-('Marcus Kim', 108, 2, '6782079223', 'seed_29'),
-('Mio Achache', 79, 1, '3235588725', 'seed_30'),
-('Muhammad Atif', 44, 1, '2166815299', 'seed_31'),
-('Nathan Tai', 344, 3, '9132964420', 'seed_32'),
-('Nicholas Carlsson', 0, 1, '4807172177', 'seed_33'),
-('Nic Young', 104, 1, '6783082537', 'seed_34'),
-('Parker Oelrich', 113, 1, '6128238560', 'seed_35'),
-('Rui Lyu Chang', 1035, 1, '6788983488', 'seed_36'),
-('Sam Kim', 76, 1, '6786224683', 'seed_37'),
-('Sawyer Miyake', 174, 1, '4049550885', 'seed_38'),
-('Sergey Sachko', 0, 1, '2244365949', 'seed_39'),
-('Tanay Kapoor', 125, 1, '4088388499', 'seed_40'),
-('Tommy Arthur', 0, 1, '7064743240', 'seed_41'),
-('Tyler Schnell', 159, 1, '8455544665', 'seed_42'),
-('Vedesh Yadlapalli', 102, 3, '7177754664', 'seed_43'),
-('Walker Helms', 100, 1, '4783301444', 'seed_44'),
-('Xander Golubic', 149, 4, '4048054453', 'seed_45'),
-('Zachary Shapiro', 56, 1, '4703043308', 'seed_46'),
-('Zachary Reed', 127, 1, '6813189431', 'seed_47'),
-('Zhengyu Liu', 139, 1, '3214000906', 'seed_48'),
-('Michael Porter', 287, 1, '4045288285', 'seed_49'),
-('Yan Tsenter', 55, 2, '3478611651', 'seed_50'),
-('Anthony Natarella', 152, 2, '6785886489', 'seed_51'),
-('Jay Townsend', 314, 2, '6786749338', 'seed_52'),
-('Dylan Curran', 387, 2, '6178938362', 'seed_53'),
-('Quinn O''Connell', 471, 2, '4012585269', 'seed_54'),
-('Joe Shulman', 537, 2, '4043749749', 'seed_55');
+('Aditya Bilawar', 165, 1, '6097217190', 'U06F0AFB8F7'),
+('Alessandro Ferrari', 59, 3, '6468215621', 'U0400NY1WN8'),
+('Alexander Frawley', 281, 3, '9179436262', 'U0400NYLXV2'),
+('Ashish Dewal', 173, 1, '5168704707', 'U08996EQFSS'),
+('Bryce Kelly', 536, 1, '6785758735', 'U0400NY44DS'),
+('Cade Richard', 179, 1, '6784477027', 'U04L0MWLR27'),
+('Christopher Goggins', 130, 1, '2023097457', 'U07JJ9VQPK5'),
+('Davin Aoyama', 150, 1, '2063042969', 'U07JFGLJR1T'),
+('Elliott Barthel', 0, 1, '6784883763', 'U09BVHMJXKQ'),
+('Ethan Hulewicz', 319, 4, '2247164791', 'U06FFSZA3GR'),
+('Ethan Lam', 30, 1, '4045109889', 'U09BVHQAPSA'),
+('Evan McCarty', 457, 1, '6788232157', 'U089FQFBZK4'),
+('Rett Smith', 123, 1, '6787104760', 'U07JJD2DFK4'),
+('Gavin Mathieu', 113, 1, '6786284098', 'U07JX39921F'),
+('Henry Lott', 165, 1, '4045587421', 'U089D005KNH'),
+('Hersh Pamnani', 0, 4, '4703017278', 'U09BVHLHW94'),
+('Jack Stoltz', 0, 1, '6467995047', 'U089FMZNYNP'),
+('Jacob Pullen', 0, 1, '4042813859', 'U09BVHQBYUW'),
+('Jacob Ma', 0, 1, '2163792952', 'U09BVHQ9G78'),
+('James Soule', 0, 1, '4232772417', 'U09BVHKK406'),
+('Jason Lai', 149, 1, '4042453010', 'U05Q7ATTY4V'),
+('Jason Barachina', 0, 1, '6783135108', 'U09BVHK12G6'),
+('John Lewis', 928, 1, '17703355774', 'U06FFSZ8P5F'),
+('Justin Xia', 352, 3, '3302326880', 'U03UXNBAKV5'),
+('Liam Streleckis', 261, 1, '7708765274', 'U05Q3K45BHU'),
+('Malhar Kamat', 79, 1, '8578290411', 'U05Q7AVBW05'),
+('Marcus Kim', 108, 2, '6782079223', 'U07JLTE2XPW'),
+('Mio Achache', 79, 1, '3235588725', 'U07JX38BDFB'),
+('Muhammad Atif', 44, 1, '2166815299', 'U07JJ9VARFD'),
+('Nathan Tai', 344, 3, '9132964420', 'U05QCMJG1MJ'),
+('Nicholas Carlsson', 0, 1, '4807172177', 'U09BVHFL5PG'),
+('Nic Young', 104, 1, '6783082537', 'U05PVN72DHV'),
+('Parker Oelrich', 113, 1, '6128238560', 'U05QCMH6V7E'),
+('Rui Chang Lyu', 1035, 1, '6788983488', 'U07JBPYSSCE'),
+('Sam Kim', 76, 1, '6786224683', 'U04L39P7QN8'),
+('Sawyer Miyake', 174, 1, '4049550885', 'U07JFGM0PEH'),
+('Sergey Sachko', 0, 1, '2244365949', 'U09BVHNQCNA'),
+('Tanay Kapoor', 125, 1, '4088388499', 'U07JFGLSH45'),
+('Tommy Arthur', 0, 1, '7064743240', 'U09BVHQ5P5L'),
+('Tyler Schnell', 159, 1, '8455544665', 'U08A4K4PMJ4'),
+('Vedesh Yadlapalli', 102, 3, '7177754664', 'U03UXNBLXSB'),
+('Walker Helms', 100, 1, '4783301444', 'U089FQFDM7U'),
+('Xander Golubic', 149, 4, '4048054453', 'U07JX38EQGZ'),
+('Zachary Shapiro', 56, 1, '4703043308', 'U02CHQ69Q0N'),
+('Zachary Reed', 127, 1, '6813189431', 'U08A4K4UUM6'),
+('Zhengyu Liu', 139, 1, '3214000906', 'U06ENMJHSMD'),
+('Michael Porter', 287, 1, '4045288285', 'U05Q7AV3C85'),
+('Yan Tsenter', 55, 2, '3478611651', 'U05Q3K0AWRL'),
+('Anthony Natarella', 152, 2, '6785886489', 'U08A4K4MWD6'),
+('Jay Townsend', 314, 2, '6786749338', 'U05PVN4DELX'),
+('Dylan Curran', 387, 2, '6178938362', 'U05QA5MS7D1'),
+('Quinn OConnell', 471, 2, '4012585269', 'U04SDB3LMGS'),
+('Joe Shulman', 537, 2, '4043749749', 'U07JBPZG8ES');
 
 -- =========================
 -- DUTY TYPES
@@ -267,6 +265,66 @@ INSERT INTO event_definition_duty (event_definition_id, duty_definition_id, defa
 -- =========================
 INSERT INTO event (name, event_definition_id, date, start_time, end_time)
 VALUES ('Philigher', 2, '2026-01-24', '22:00', '02:00');
+
+-- =========================
+-- SAMPLE EVENTS (THIS WEEK / LAST WEEK)
+-- =========================
+INSERT INTO event (name, event_definition_id, date, start_time, end_time)
+VALUES
+  ('Weekly Social - Last Week (Sat)', 2, '2026-01-31', '21:00', '23:30'),
+  ('Weekly Social - Last Week (Sun)', 2, '2026-02-01', '21:00', '23:30'),
+  ('Weekly Social - This Week', 2, '2026-02-05', '21:00', '23:30');
+
+-- Duties for last week event
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
+SELECT e.id, 53, 10, 2, '21:00' FROM event e WHERE e.name = 'Weekly Social - Last Week (Sat)' AND e.date = '2026-01-31';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
+SELECT e.id, 54, 10, 1, '21:00' FROM event e WHERE e.name = 'Weekly Social - Last Week (Sat)' AND e.date = '2026-01-31';
+
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
+SELECT e.id, 53, 10, 2, '21:00' FROM event e WHERE e.name = 'Weekly Social - Last Week (Sun)' AND e.date = '2026-02-01';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
+SELECT e.id, 54, 10, 1, '21:00' FROM event e WHERE e.name = 'Weekly Social - Last Week (Sun)' AND e.date = '2026-02-01';
+
+-- Duties for this week event
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
+SELECT e.id, 53, 10, 2, '21:00' FROM event e WHERE e.name = 'Weekly Social - This Week' AND e.date = '2026-02-05';
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
+SELECT e.id, 54, 10, 1, '21:00' FROM event e WHERE e.name = 'Weekly Social - This Week' AND e.date = '2026-02-05';
+
+-- Assignment for last week (completed)
+INSERT INTO event_duty_assignment (event_duty_id, brother_id, status_id)
+SELECT ed.id, b.id, 2
+FROM event_duty ed
+JOIN event e ON e.id = ed.event_id
+JOIN brother b ON b.slack_id = 'seed_1'
+WHERE e.name = 'Weekly Social - Last Week (Sat)' AND e.date = '2026-01-31'
+LIMIT 1;
+
+INSERT INTO event_duty_assignment (event_duty_id, brother_id, status_id)
+SELECT ed.id, b.id, 2
+FROM event_duty ed
+JOIN event e ON e.id = ed.event_id
+JOIN brother b ON b.slack_id = 'seed_2'
+WHERE e.name = 'Weekly Social - Last Week (Sun)' AND e.date = '2026-02-01'
+LIMIT 1;
+
+-- =========================
+-- POINT ADJUSTMENTS (ADMIN)
+-- =========================
+INSERT INTO point_adjustment (brother_id, event_id, amount, reason, created_by, created_at)
+SELECT b.id, e.id, 15, 'Admin bonus', admin.id, datetime('now')
+FROM brother b
+JOIN brother admin ON admin.slack_id = 'seed_16'
+JOIN event e ON e.name = 'Philigher' AND e.date = '2026-01-24'
+WHERE b.slack_id = 'seed_1';
+
+INSERT INTO point_adjustment (brother_id, event_id, amount, reason, created_by, created_at)
+SELECT b.id, e.id, -5, 'Admin adjustment', admin.id, datetime('now')
+FROM brother b
+JOIN brother admin ON admin.slack_id = 'seed_16'
+JOIN event e ON e.name = 'Philigher' AND e.date = '2026-01-24'
+WHERE b.slack_id = 'seed_2';
 
 -- Setup duties (due by 20:00)
 INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)

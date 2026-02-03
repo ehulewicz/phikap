@@ -1,6 +1,7 @@
 import { Bool, Num, OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { type AppContext } from "../types";
+import { PaginationMeta } from "./shared";
 
 const EventDefinition = z.object({
 	id: z.number(),
@@ -20,6 +21,12 @@ export class EventDefinitionList extends OpenAPIRoute {
 	schema = {
 		tags: ["Event Definitions"],
 		summary: "List event definitions",
+		request: {
+			query: z.object({
+				page: z.coerce.number().int().min(1).default(1),
+				page_size: z.coerce.number().int().min(1).max(100).default(20),
+			}),
+		},
 		responses: {
 			"200": {
 				description: "Event definitions",
@@ -28,6 +35,7 @@ export class EventDefinitionList extends OpenAPIRoute {
 						schema: z.object({
 							success: Bool(),
 							event_definitions: EventDefinition.array(),
+							meta: PaginationMeta,
 						}),
 					},
 				},
@@ -35,10 +43,180 @@ export class EventDefinitionList extends OpenAPIRoute {
 		},
 	};
 
-	async handle(_c: AppContext) {
+	async handle(c: AppContext) {
+		const { query } = await this.getValidatedData<typeof this.schema>();
+		const page = query.page ?? 1;
+		const pageSize = query.page_size ?? 20;
+		const offset = (page - 1) * pageSize;
+
+		const countResult = await c.env.phikap_db
+			.prepare("SELECT COUNT(*) AS total FROM event_definition")
+			.first();
+
+		const result = await c.env.phikap_db
+			.prepare(
+				`SELECT id, name, admin_points
+				 FROM event_definition
+				 ORDER BY id
+				 LIMIT ? OFFSET ?`
+			)
+			.bind(pageSize, offset)
+			.all();
+
+		const total = Number(countResult?.total ?? 0);
+		const totalPages = pageSize > 0 ? Math.ceil(total / pageSize) : 0;
+
 		return {
 			success: true,
-			event_definitions: [],
+			event_definitions: result.results ?? [],
+			meta: {
+				page,
+				page_size: pageSize,
+				total,
+				total_pages: totalPages,
+			},
+		};
+	}
+}
+
+export class EventDefinitionCreate extends OpenAPIRoute {
+	schema = {
+		tags: ["Event Definitions"],
+		summary: "Create event definition",
+		request: {
+			body: {
+				content: {
+					"application/json": {
+						schema: z.object({
+							name: z.string(),
+							admin_points: z.number().int().default(10),
+							duties: z
+								.array(
+									z.object({
+										duty_definition_id: z.number(),
+										default_points: z.number(),
+										default_required_brothers: z.number(),
+									})
+								)
+								.optional(),
+						}),
+					},
+				},
+			},
+		},
+		responses: {
+			"200": {
+				description: "Created event definition",
+				content: {
+					"application/json": {
+						schema: z.object({
+							success: Bool(),
+							event_definition: EventDefinition.nullable(),
+						}),
+					},
+				},
+			},
+		},
+	};
+
+	async handle(c: AppContext) {
+		const data = await this.getValidatedData<typeof this.schema>();
+		const { name, admin_points, duties } = data.body;
+
+		const insert = await c.env.phikap_db
+			.prepare(
+				"INSERT INTO event_definition (name, admin_points) VALUES (?, ?)"
+			)
+			.bind(name, admin_points)
+			.run();
+
+		const eventDefinitionId = Number(insert.meta.last_row_id);
+
+		if (duties && duties.length > 0) {
+			const stmt = c.env.phikap_db.prepare(
+				`INSERT INTO event_definition_duty
+				 (event_definition_id, duty_definition_id, default_points, default_required_brothers)
+				 VALUES (?, ?, ?, ?)`
+			);
+			const batch = duties.map((duty) =>
+				stmt.bind(
+					eventDefinitionId,
+					duty.duty_definition_id,
+					duty.default_points,
+					duty.default_required_brothers
+				)
+			);
+			await c.env.phikap_db.batch(batch);
+		}
+
+		const created = await c.env.phikap_db
+			.prepare("SELECT id, name, admin_points FROM event_definition WHERE id = ?")
+			.bind(eventDefinitionId)
+			.first();
+
+		return {
+			success: true,
+			event_definition: created ?? null,
+		};
+	}
+}
+
+export class EventDefinitionUpdate extends OpenAPIRoute {
+	schema = {
+		tags: ["Event Definitions"],
+		summary: "Update event definition",
+		request: {
+			params: z.object({
+				event_definition_id: Num({ description: "Event definition id" }),
+			}),
+			body: {
+				content: {
+					"application/json": {
+						schema: z.object({
+							name: z.string(),
+							admin_points: z.number().int(),
+						}),
+					},
+				},
+			},
+		},
+		responses: {
+			"200": {
+				description: "Updated event definition",
+				content: {
+					"application/json": {
+						schema: z.object({
+							success: Bool(),
+							event_definition: EventDefinition.nullable(),
+						}),
+					},
+				},
+			},
+		},
+	};
+
+	async handle(c: AppContext) {
+		const data = await this.getValidatedData<typeof this.schema>();
+		const { event_definition_id } = data.params;
+		const { name, admin_points } = data.body;
+
+		await c.env.phikap_db
+			.prepare(
+				`UPDATE event_definition
+				 SET name = ?, admin_points = ?
+				 WHERE id = ?`
+			)
+			.bind(name, admin_points, event_definition_id)
+			.run();
+
+		const updated = await c.env.phikap_db
+			.prepare("SELECT id, name, admin_points FROM event_definition WHERE id = ?")
+			.bind(event_definition_id)
+			.first();
+
+		return {
+			success: true,
+			event_definition: updated ?? null,
 		};
 	}
 }
@@ -51,6 +229,10 @@ export class EventDefinitionDutiesList extends OpenAPIRoute {
 			params: z.object({
 				event_definition_id: Num({ description: "Event definition id" }),
 			}),
+			query: z.object({
+				page: z.coerce.number().int().min(1).default(1),
+				page_size: z.coerce.number().int().min(1).max(100).default(20),
+			}),
 		},
 		responses: {
 			"200": {
@@ -60,6 +242,7 @@ export class EventDefinitionDutiesList extends OpenAPIRoute {
 						schema: z.object({
 							success: Bool(),
 							duties: EventDefinitionDuty.array(),
+							meta: PaginationMeta,
 						}),
 					},
 				},
@@ -67,10 +250,228 @@ export class EventDefinitionDutiesList extends OpenAPIRoute {
 		},
 	};
 
-	async handle(_c: AppContext) {
+	async handle(c: AppContext) {
+		const { params, query } = await this.getValidatedData<typeof this.schema>();
+		const page = query.page ?? 1;
+		const pageSize = query.page_size ?? 20;
+		const offset = (page - 1) * pageSize;
+
+		const countResult = await c.env.phikap_db
+			.prepare(
+				`SELECT COUNT(*) AS total
+				 FROM event_definition_duty
+				 WHERE event_definition_id = ?`
+			)
+			.bind(params.event_definition_id)
+			.first();
+
+		const result = await c.env.phikap_db
+			.prepare(
+				`SELECT id, event_definition_id, duty_definition_id, default_points, default_required_brothers
+				 FROM event_definition_duty
+				 WHERE event_definition_id = ?
+				 ORDER BY id
+				 LIMIT ? OFFSET ?`
+			)
+			.bind(params.event_definition_id, pageSize, offset)
+			.all();
+
+		const total = Number(countResult?.total ?? 0);
+		const totalPages = pageSize > 0 ? Math.ceil(total / pageSize) : 0;
+
 		return {
 			success: true,
-			duties: [],
+			duties: result.results ?? [],
+			meta: {
+				page,
+				page_size: pageSize,
+				total,
+				total_pages: totalPages,
+			},
+		};
+	}
+}
+
+export class EventDefinitionDutyCreate extends OpenAPIRoute {
+	schema = {
+		tags: ["Event Definitions"],
+		summary: "Add a default duty to an event definition",
+		request: {
+			params: z.object({
+				event_definition_id: Num({ description: "Event definition id" }),
+			}),
+			body: {
+				content: {
+					"application/json": {
+						schema: z.object({
+							duty_definition_id: z.number(),
+							default_points: z.number(),
+							default_required_brothers: z.number(),
+						}),
+					},
+				},
+			},
+		},
+		responses: {
+			"200": {
+				description: "Created default duty",
+				content: {
+					"application/json": {
+						schema: z.object({
+							success: Bool(),
+							duty: EventDefinitionDuty.nullable(),
+						}),
+					},
+				},
+			},
+		},
+	};
+
+	async handle(c: AppContext) {
+		const data = await this.getValidatedData<typeof this.schema>();
+		const { event_definition_id } = data.params;
+		const { duty_definition_id, default_points, default_required_brothers } =
+			data.body;
+
+		const insert = await c.env.phikap_db
+			.prepare(
+				`INSERT INTO event_definition_duty
+				 (event_definition_id, duty_definition_id, default_points, default_required_brothers)
+				 VALUES (?, ?, ?, ?)`
+			)
+			.bind(
+				event_definition_id,
+				duty_definition_id,
+				default_points,
+				default_required_brothers
+			)
+			.run();
+
+		const id = Number(insert.meta.last_row_id);
+		const created = await c.env.phikap_db
+			.prepare(
+				`SELECT id, event_definition_id, duty_definition_id, default_points, default_required_brothers
+				 FROM event_definition_duty
+				 WHERE id = ?`
+			)
+			.bind(id)
+			.first();
+
+		return {
+			success: true,
+			duty: created ?? null,
+		};
+	}
+}
+
+export class EventDefinitionDutyUpdate extends OpenAPIRoute {
+	schema = {
+		tags: ["Event Definitions"],
+		summary: "Update a default duty for an event definition",
+		request: {
+			params: z.object({
+				event_definition_id: Num({ description: "Event definition id" }),
+				event_definition_duty_id: Num({ description: "Event definition duty id" }),
+			}),
+			body: {
+				content: {
+					"application/json": {
+						schema: z.object({
+							default_points: z.number(),
+							default_required_brothers: z.number(),
+						}),
+					},
+				},
+			},
+		},
+		responses: {
+			"200": {
+				description: "Updated default duty",
+				content: {
+					"application/json": {
+						schema: z.object({
+							success: Bool(),
+							duty: EventDefinitionDuty.nullable(),
+						}),
+					},
+				},
+			},
+		},
+	};
+
+	async handle(c: AppContext) {
+		const data = await this.getValidatedData<typeof this.schema>();
+		const { event_definition_id, event_definition_duty_id } = data.params;
+		const { default_points, default_required_brothers } = data.body;
+
+		await c.env.phikap_db
+			.prepare(
+				`UPDATE event_definition_duty
+				 SET default_points = ?, default_required_brothers = ?
+				 WHERE id = ? AND event_definition_id = ?`
+			)
+			.bind(
+				default_points,
+				default_required_brothers,
+				event_definition_duty_id,
+				event_definition_id
+			)
+			.run();
+
+		const updated = await c.env.phikap_db
+			.prepare(
+				`SELECT id, event_definition_id, duty_definition_id, default_points, default_required_brothers
+				 FROM event_definition_duty
+				 WHERE id = ?`
+			)
+			.bind(event_definition_duty_id)
+			.first();
+
+		return {
+			success: true,
+			duty: updated ?? null,
+		};
+	}
+}
+
+export class EventDefinitionDutyDelete extends OpenAPIRoute {
+	schema = {
+		tags: ["Event Definitions"],
+		summary: "Remove a default duty from an event definition",
+		request: {
+			params: z.object({
+				event_definition_id: Num({ description: "Event definition id" }),
+				event_definition_duty_id: Num({ description: "Event definition duty id" }),
+			}),
+		},
+		responses: {
+			"200": {
+				description: "Deleted default duty",
+				content: {
+					"application/json": {
+						schema: z.object({
+							success: Bool(),
+						}),
+					},
+				},
+			},
+		},
+	};
+
+	async handle(c: AppContext) {
+		const data = await this.getValidatedData<typeof this.schema>();
+		const { event_definition_id, event_definition_duty_id } = data.params;
+
+		await c.env.phikap_db
+			.prepare(
+				`DELETE FROM event_definition_duty
+				 WHERE id = ? AND event_definition_id = ?`
+			)
+			.bind(event_definition_duty_id, event_definition_id)
+			.run();
+
+		return {
+			success: true,
 		};
 	}
 }
