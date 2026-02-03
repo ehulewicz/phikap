@@ -205,12 +205,18 @@ function App() {
     setLoading(true);
     setError(null);
 
-    fetchJson<{ success: boolean; events: EventItem[] }>(
-      `${paths.events.list()}${buildQuery({ page: 1, page_size: 100 })}`,
-    )
-      .then((eventData) => {
+    Promise.all([
+      fetchJson<{ success: boolean; events: EventItem[] }>(
+        `${paths.events.list()}${buildQuery({ page: 1, page_size: 100 })}`,
+      ),
+      fetchJson<{ success: boolean; event_definitions: EventDefinition[] }>(
+        `${paths.eventDefinitions.list()}${buildQuery({ page: 1, page_size: 100 })}`,
+      ),
+    ])
+      .then(([eventData, definitionData]) => {
         if (!active) return;
         setEvents(eventData.events ?? []);
+        setEventDefinitions(definitionData.event_definitions ?? []);
         if (eventData.events?.length) {
           setSelectedEventId(eventData.events[0].id);
         }
@@ -390,6 +396,17 @@ function App() {
     return map;
   }, [dutyDefinitions]);
 
+  const eventDefinitionById = useMemo(() => {
+    const map = new Map<number, EventDefinition>();
+    eventDefinitions.forEach((definition) => map.set(definition.id, definition));
+    return map;
+  }, [eventDefinitions]);
+
+  const isSpecialEvent = (event: EventItem) => {
+    const definition = eventDefinitionById.get(event.event_definition_id);
+    return definition?.name === "Special";
+  };
+
   const sortedDutyDefinitions = useMemo(() => {
     const order = ["Purchase", "Setup", "During", "Cleanup"];
     const orderIndex = new Map(order.map((label, index) => [label, index]));
@@ -545,22 +562,24 @@ function App() {
     return { start, end };
   };
 
-  const getWeekendRange = (baseDate: Date) => {
-    const week = getWeekRange(baseDate);
-    const start = new Date(week.start);
-    start.setDate(week.start.getDate() + 4);
+  const getCalendarWeekRange = (baseDate: Date) => {
+    const date = new Date(baseDate);
+    const day = date.getDay();
+    const diffToTuesday = (day + 5) % 7;
+    const start = new Date(date);
+    start.setDate(date.getDate() - diffToTuesday);
     start.setHours(0, 0, 0, 0);
-    const end = new Date(week.start);
-    end.setDate(week.start.getDate() + 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
     end.setHours(23, 59, 59, 999);
     return { start, end };
   };
 
-  const currentWeekendRange = useMemo(() => getWeekendRange(new Date()), []);
+  const currentWeekRange = useMemo(() => getCalendarWeekRange(new Date()), []);
 
   useEffect(() => {
     const now = new Date();
-    const { start, end } = getWeekendRange(now);
+    const { start, end } = getCalendarWeekRange(now);
     const filtered = events.filter((event) => {
       const date = parseDate(event.date);
       return date >= start && date <= end;
@@ -575,7 +594,7 @@ function App() {
       return;
     }
     const now = new Date();
-    const { start, end } = getWeekendRange(now);
+    const { start, end } = getCalendarWeekRange(now);
     const weekEvents = events.filter((event) => {
       const date = parseDate(event.date);
       return date >= start && date <= end;
@@ -1698,7 +1717,6 @@ function App() {
             <div className="profile-name">
               {displayBrother ? displayBrother.name : "Select a brother"}
             </div>
-            <span className="badge">DUTY ROSTER</span>
             <button className="ghost small" type="button" onClick={handleLogout}>
               Log out
             </button>
@@ -1799,16 +1817,29 @@ function App() {
                             : null;
                           const isAssigned = Boolean(activeAssignment);
                           const isSignedUp = activeAssignment?.status_name === "signed_up";
-                          const canDrop = Boolean(activeAssignment) && isSignedUp && canDropSelectedEvent;
+                          const canDrop =
+                            Boolean(activeAssignment) && isSignedUp && canDropSelectedEvent;
                           const isUnlocked = selectedEvent?.duties_unlocked === 1;
                           const disabled =
-                            !activeBrotherId ||
-                            !isUnlocked ||
-                            isFull ||
-                            (isAssigned && !isSignedUp);
+                            !activeBrotherId || !isUnlocked || isFull || isAssigned || isSignedUp;
 
                           return (
                             <div className="duty-row" key={duty.id}>
+                              {isSignedUp ? (
+                                <button
+                                  className="duty-remove"
+                                  type="button"
+                                  onClick={() =>
+                                    activeAssignment
+                                      ? handleDropAssignment(activeAssignment.id)
+                                      : undefined
+                                  }
+                                  disabled={!canDrop || droppingAssignmentId === activeAssignment?.id}
+                                  aria-label="Remove sign up"
+                                >
+                                  ×
+                                </button>
+                              ) : null}
                               <div>
                                 <p className="duty-name">{duty.description}</p>
                                 <p className="duty-meta">
@@ -1828,35 +1859,14 @@ function App() {
                                 <span className={`pill ${isFull ? "full" : "open"}`}>
                                   {isFull ? "Full" : "Open"}
                                 </span>
-                                {isSignedUp ? (
-                                  <button
-                                    className="ghost danger"
-                                    type="button"
-                                    onClick={() =>
-                                      activeAssignment
-                                        ? handleDropAssignment(activeAssignment.id)
-                                        : undefined
-                                    }
-                                    disabled={!canDrop || droppingAssignmentId === activeAssignment?.id}
-                                  >
-                                    {canDrop ? "Drop" : "Locked"}
-                                  </button>
-                                ) : (
-                                  <button
-                                    className="ghost"
-                                    type="button"
-                                    onClick={() => handleSignUp(duty.id)}
-                                    disabled={disabled || submittingDutyId === duty.id}
-                                  >
-                                    {!isUnlocked
-                                      ? "Locked"
-                                      : isAssigned
-                                        ? "Assigned"
-                                        : isFull
-                                          ? "Full"
-                                          : "Sign up"}
-                                  </button>
-                                )}
+                                <button
+                                  className="ghost"
+                                  type="button"
+                                  onClick={() => handleSignUp(duty.id)}
+                                  disabled={disabled || submittingDutyId === duty.id}
+                                >
+                                  {!isUnlocked ? "Locked" : "Sign up"}
+                                </button>
                               </div>
                             </div>
                           );
@@ -1878,7 +1888,10 @@ function App() {
                 ) : (
                   <div className="week-events">
                     {weekEvents.map((event) => (
-                      <div className="week-event" key={event.id}>
+                      <div
+                        className={`week-event ${isSpecialEvent(event) ? "special" : ""}`}
+                        key={event.id}
+                      >
                         <div>
                           <p className="event-title">{event.name}</p>
                           <p className="event-time">
@@ -1886,13 +1899,15 @@ function App() {
                             {formatTime(event.end_time)}
                           </p>
                         </div>
-                        <button
-                          className="ghost"
-                          type="button"
-                          onClick={(eventClick) => handleEventClick(event.id, eventClick)}
-                        >
-                          View duties
-                        </button>
+                        {isSpecialEvent(event) ? null : (
+                          <button
+                            className="ghost"
+                            type="button"
+                            onClick={(eventClick) => handleEventClick(event.id, eventClick)}
+                          >
+                            View duties
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1919,8 +1934,7 @@ function App() {
                   const dayEvents = eventsByDate.get(dateKey) ?? [];
                   const isToday = dateKey === todayKey;
                   const isCurrentWeek =
-                    cell.date >= currentWeekendRange.start &&
-                    cell.date <= currentWeekendRange.end;
+                    cell.date >= currentWeekRange.start && cell.date <= currentWeekRange.end;
                   return (
                     <div
                       key={`${dateKey}-${cell.inMonth ? "in" : "out"}`}
@@ -1931,16 +1945,22 @@ function App() {
                       <div className="calendar-day-number">{cell.date.getDate()}</div>
                       {dayEvents.length > 0 ? (
                         <div className="calendar-events">
-                          <button
-                            key={dayEvents[0].id}
-                            type="button"
-                            className="calendar-event"
-                            onClick={(eventClick) =>
-                              handleEventClick(dayEvents[0].id, eventClick)
-                            }
-                          >
-                            {dayEvents[0].name}
-                          </button>
+                          {isSpecialEvent(dayEvents[0]) ? (
+                            <div className="calendar-event special">
+                              {dayEvents[0].name}
+                            </div>
+                          ) : (
+                            <button
+                              key={dayEvents[0].id}
+                              type="button"
+                              className="calendar-event"
+                              onClick={(eventClick) =>
+                                handleEventClick(dayEvents[0].id, eventClick)
+                              }
+                            >
+                              {dayEvents[0].name}
+                            </button>
+                          )}
                         </div>
                       ) : null}
                     </div>
@@ -2545,7 +2565,62 @@ function App() {
 
                     {adminItemId !== "new" ? (
                       <div className="admin-subsection">
-                        <div className="admin-subtitle">Event duties</div>
+                        <div className="admin-subtitle">Add duty to event</div>
+                        <div className="admin-duty-row event-duty-add">
+                          <div className="select-pill">
+                            <label>Duty definition</label>
+                            <select
+                              value={eventDutyDraftDefinitionId || ""}
+                              onChange={(event) =>
+                                handleEventDutyDraftDefinitionChange(event.target.value)
+                              }
+                            >
+                              <option value="">Select</option>
+                              {sortedDutyDefinitions.map((definition) => (
+                                <option key={definition.id} value={definition.id}>
+                                  {definition.description} ·{" "}
+                                  {dutyTypeNameById.get(definition.duty_type_id) ??
+                                    `Type ${definition.duty_type_id}`}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="select-pill">
+                            <label>Points</label>
+                            <input
+                              className="text-input"
+                              type="number"
+                              value={eventDutyDraftPoints}
+                              onChange={(event) => setEventDutyDraftPoints(event.target.value)}
+                            />
+                          </div>
+                          <div className="select-pill">
+                            <label>Slots</label>
+                            <input
+                              className="text-input"
+                              type="number"
+                              value={eventDutyDraftRequired}
+                              onChange={(event) => setEventDutyDraftRequired(event.target.value)}
+                            />
+                          </div>
+                          <div className="select-pill">
+                            <label>Time</label>
+                            <input
+                              className="text-input"
+                              type="time"
+                              value={eventDutyDraftTime}
+                              onChange={(event) => setEventDutyDraftTime(event.target.value)}
+                            />
+                          </div>
+                          <button
+                            className="ghost small"
+                            type="button"
+                            onClick={handleEventDutyAdd}
+                          >
+                            Add
+                          </button>
+                        </div>
+                        <div className="admin-divider" />
                         <div className="admin-group-stack">
                           {eventDutyGroups.map((group) => (
                             <div className="admin-duty-group" key={group.label}>
@@ -2607,62 +2682,6 @@ function App() {
                               )}
                             </div>
                           ))}
-                        </div>
-                        <div className="admin-divider" />
-                        <div className="admin-subtitle">Add duty to event</div>
-                        <div className="admin-duty-row event-duty-add">
-                          <div className="select-pill">
-                            <label>Duty definition</label>
-                            <select
-                              value={eventDutyDraftDefinitionId || ""}
-                              onChange={(event) =>
-                                handleEventDutyDraftDefinitionChange(event.target.value)
-                              }
-                            >
-                              <option value="">Select</option>
-                              {sortedDutyDefinitions.map((definition) => (
-                                <option key={definition.id} value={definition.id}>
-                                  {definition.description} ·{" "}
-                                  {dutyTypeNameById.get(definition.duty_type_id) ??
-                                    `Type ${definition.duty_type_id}`}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="select-pill">
-                            <label>Points</label>
-                            <input
-                              className="text-input"
-                              type="number"
-                              value={eventDutyDraftPoints}
-                              onChange={(event) => setEventDutyDraftPoints(event.target.value)}
-                            />
-                          </div>
-                          <div className="select-pill">
-                            <label>Slots</label>
-                            <input
-                              className="text-input"
-                              type="number"
-                              value={eventDutyDraftRequired}
-                              onChange={(event) => setEventDutyDraftRequired(event.target.value)}
-                            />
-                          </div>
-                          <div className="select-pill">
-                            <label>Time</label>
-                            <input
-                              className="text-input"
-                              type="time"
-                              value={eventDutyDraftTime}
-                              onChange={(event) => setEventDutyDraftTime(event.target.value)}
-                            />
-                          </div>
-                          <button
-                            className="ghost small"
-                            type="button"
-                            onClick={handleEventDutyAdd}
-                          >
-                            Add
-                          </button>
                         </div>
                       </div>
                     ) : null}

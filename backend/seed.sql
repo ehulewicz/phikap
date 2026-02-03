@@ -23,6 +23,28 @@ INSERT INTO role (name) VALUES
 -- name, previous_semester_points, role_id, phone_number
 -- role_id: 1=active, 2=inactive, 3=senior, 4=admin
 
+-- =========================
+-- DUTY TYPES
+-- =========================
+INSERT INTO duty_type (name) VALUES
+  ('Setup'),
+  ('Cleanup'),
+  ('Purchase'),
+  ('During');
+
+-- =========================
+-- EVENT DEFINITIONS
+-- =========================
+INSERT INTO event_definition (name, admin_points) VALUES
+  ('BPK', 15),
+  ('Open party', 25),
+  ('Closed party', 20),
+  ('Date night', 15),
+  ('Pong tourney', 15),
+  ('Tailgate', 15),
+  ('Special', 0),
+  ('Brotherhood', 15);
+
 INSERT INTO brother (name, last_semester_points, role_id, phone_number, slack_id)
 VALUES
 ('Aditya Bilawar', 165, 1, '6097217190', 'U06F0AFB8F7'),
@@ -80,90 +102,69 @@ VALUES
 ('Joe Shulman', 537, 2, '4043749749', 'U07JBPZG8ES');
 
 -- =========================
--- DUTY TYPES
--- =========================
-INSERT INTO duty_type (name) VALUES
-  ('Setup'),
-  ('Cleanup'),
-  ('Purchase'),
-  ('During');
-
--- =========================
--- EVENT DEFINITIONS
--- =========================
-INSERT INTO event_definition (name, admin_points) VALUES
-  ('BPK', 15),
-  ('Open party', 25),
-  ('Closed party', 20),
-  ('Date night', 15),
-  ('Pong tourney', 15),
-  ('Tailgate', 15),
-  ('Special', 0);
-
--- =========================
 -- DUTY DEFINITIONS
 -- =========================
 INSERT INTO duty_definition (duty_type_id, description, default_points, default_required_brothers) VALUES
   -- Setup duties
-  (1, 'Draw banner design', 0, 1),
-  (1, 'Finish banner painting', 0, 1),
-  (1, 'Hang banner', 0, 1),
-  (1, 'Set up decorations', 0, 1),
-  (1, 'Set up fence', 0, 1),
-  (1, 'Set up and wipe down bar and tables', 0, 1),
-  (1, 'Move chairs out of the way', 0, 1),
-  (1, 'Rearrange couches', 0, 1),
-  (1, 'Sweep and mop chapter room', 0, 1),
-  (1, 'Sweep and mop foyer pool room tv room', 0, 1),
-  (1, 'Pick up and take out chapter room trash', 0, 1),
-  (1, 'Pick up and take out foyer pool room tv room trash', 0, 1),
-  (1, 'Clean front yard', 0, 1),
-  (1, 'Clean backyard', 0, 1),
-  (1, 'Clean roof', 0, 1),
-  (1, 'Clean womens restroom', 0, 1),
-  (1, 'Clean downstairs restroom', 0, 1),
-  (1, 'Set up sound system and lights', 0, 1),
-  (1, 'Setup music inside and out', 0, 1),
-  (1, 'Move subwoofer', 0, 1),
-  (1, 'Clean and fill coolers coolers', 0, 1),
-  (1, 'Set up cooler behind bar', 0, 1),
-  (1, 'Move grill outside', 0, 1),
-  (1, 'Set up yard games', 0, 1),
+  (1, 'Draw banner design', 8, 1),
+  (1, 'Finish banner painting', 8, 1),
+  (1, 'Hang banner', 5, 1),
+  (1, 'Set up decorations', 5, 1),
+  (1, 'Set up fence', 6, 1),
+  (1, 'Set up and wipe down bar and tables', 2, 1),
+  (1, 'Move chairs out of the way', 6, 1),
+  (1, 'Rearrange couches', 3, 1),
+  (1, 'Sweep and mop chapter room', 6, 1),
+  (1, 'Sweep and mop foyer pool room tv room', 6, 1),
+  (1, 'Pick up and take out chapter room trash', 5, 1),
+  (1, 'Pick up and take out foyer pool room tv room trash', 5, 1),
+  (1, 'Clean front yard', 5, 1),
+  (1, 'Clean backyard', 5, 1),
+  (1, 'Clean roof', 6, 1),
+  (1, 'Clean womens restroom', 6, 1),
+  (1, 'Clean downstairs restroom', 6, 1),
+  (1, 'Set up sound system and lights', 6, 1),
+  (1, 'Setup music inside and out', 6, 1),
+  (1, 'Move subwoofer', 5, 1),
+  (1, 'Clean and fill coolers coolers', 3, 1),
+  (1, 'Set up cooler behind bar', 3, 1),
+  (1, 'Move grill outside', 4, 1),
+  (1, 'Set up yard games', 5, 1),
   -- Cleanup duties
-  (2, 'Take down banner', 0, 1),
-  (2, 'Take down fence', 0, 1),
-  (2, 'Bring in and wipe down bar and tables', 0, 1),
-  (2, 'Fix couches', 0, 1),
-  (2, 'Sweep and mop chapter room', 0, 1),
-  (2, 'Sweep and mop foyer pool room tv room', 0, 1),
-  (2, 'Pick up and take out chapter room trash', 0, 1),
-  (2, 'Pick up and take out foyer pool room tv room trash', 0, 1),
-  (2, 'Clean front yard', 0, 1),
-  (2, 'Clean backyard', 0, 1),
-  (2, 'Clean roof', 0, 1),
-  (2, 'Clean womens restroom', 0, 1),
-  (2, 'Clean downstairs restroom', 0, 1),
-  (2, 'Take apart sound system and lights', 0, 1),
-  (2, 'Return subwoofer', 0, 1),
-  (2, 'Return grill', 0, 1),
-  (2, 'Put away yard games', 0, 1),
+  (2, 'Take down banner', 5, 1),
+  (2, 'Take down fence', 4, 1),
+  (2, 'Bring in and wipe down bar and tables', 3, 1),
+  (2, 'Fix couches', 3, 1),
+  (2, 'Sweep and mop chapter room', 6, 1),
+  (2, 'Sweep and mop foyer pool room tv room', 6, 1),
+  (2, 'Pick up and take out chapter room trash', 5, 1),
+  (2, 'Pick up and take out foyer pool room tv room trash', 5, 1),
+  (2, 'Clean front yard', 5, 1),
+  (2, 'Clean backyard', 5, 1),
+  (2, 'Clean roof', 6, 1),
+  (2, 'Clean womens restroom', 6, 1),
+  (2, 'Clean downstairs restroom', 6, 1),
+  (2, 'Take apart sound system and lights', 6, 1),
+  (2, 'Return subwoofer', 5, 1),
+  (2, 'Return grill', 4, 1),
+  (2, 'Put away yard games', 5, 1),
   -- Purchase duties
-  (3, 'Buy alcohol', 0, 1),
-  (3, 'Buy ice', 0, 1),
-  (3, 'Buy cups', 0, 1),
-  (3, 'Buy food', 0, 1),
-  (3, 'Buy ping pong balls', 0, 1),
-  (3, 'Buy die', 0, 1),
-  (3, 'Buy pumpkins', 0, 1),
-  (3, 'Buy tablecloths', 0, 1),
-  (3, 'Buy decorations', 0, 1),
+  (3, 'Buy alcohol', 5, 1),
+  (3, 'Buy ice', 5, 1),
+  (3, 'Buy cups', 3, 1),
+  (3, 'Buy food', 4, 1),
+  (3, 'Buy ping pong balls', 2, 1),
+  (3, 'Buy die', 2, 1),
+  (3, 'Buy pumpkins', 3, 1),
+  (3, 'Buy tablecloths', 3, 1),
+  (3, 'Buy decorations', 5, 1),
   -- During duties
-  (4, 'Sober monitor', 0, 1),
-  (4, 'Bartender', 0, 1),
-  (4, 'Door', 0, 1),
-  (4, 'DJ', 0, 1),
-  (4, 'Grilling', 0, 1),
-  (4, 'Judge competition', 0, 1);
+  (4, 'Sober monitor', 20, 1),
+  (4, 'Bartender', 8, 1),
+  (4, 'Door', 8, 1),
+  (4, 'DJ', 8, 1),
+  (4, 'Grilling', 7, 1),
+  (4, 'Judge competition', 6, 1);
 
 -- =========================
 -- EVENT TYPE DUTY TEMPLATES
@@ -262,142 +263,37 @@ INSERT INTO event_definition_duty (event_definition_id, duty_definition_id, defa
   (6, 42, 8, 1), (6, 43, 8, 1), (6, 44, 8, 1), (6, 45, 8, 1), (6, 47, 5, 1), (6, 48, 5, 1),
   (6, 53, 10, 2);
 
--- =========================
--- SAMPLE EVENT + DUTIES
--- =========================
-INSERT INTO event (name, event_definition_id, date, start_time, end_time)
-VALUES ('Philigher', 2, '2026-01-24', '22:00', '02:00');
+-- Brotherhood (same as BPK, excluding During duties)
+INSERT INTO event_definition_duty (event_definition_id, duty_definition_id, default_points, default_required_brothers)
+SELECT brotherhood.id, ed.duty_definition_id, ed.default_points, ed.default_required_brothers
+FROM event_definition_duty ed
+JOIN event_definition bpk ON bpk.id = ed.event_definition_id AND bpk.name = 'BPK'
+JOIN duty_definition dd ON dd.id = ed.duty_definition_id
+JOIN event_definition brotherhood ON brotherhood.name = 'Brotherhood'
+WHERE dd.duty_type_id <> 4;
 
 -- =========================
--- SAMPLE EVENTS (THIS WEEK / LAST WEEK)
+-- CALENDAR EVENTS (SPRING 2026)
 -- =========================
 INSERT INTO event (name, event_definition_id, date, start_time, end_time)
 VALUES
-  ('Weekly Social - Last Week (Sat)', 2, '2026-01-31', '21:00', '23:30'),
-  ('Weekly Social - Last Week (Sun)', 2, '2026-02-01', '21:00', '23:30'),
-  ('Weekly Social - This Week', 2, '2026-02-05', '21:00', '23:30');
-
--- Duties for last week event
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 53, 10, 2, '21:00' FROM event e WHERE e.name = 'Weekly Social - Last Week (Sat)' AND e.date = '2026-01-31';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 54, 10, 1, '21:00' FROM event e WHERE e.name = 'Weekly Social - Last Week (Sat)' AND e.date = '2026-01-31';
-
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 53, 10, 2, '21:00' FROM event e WHERE e.name = 'Weekly Social - Last Week (Sun)' AND e.date = '2026-02-01';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 54, 10, 1, '21:00' FROM event e WHERE e.name = 'Weekly Social - Last Week (Sun)' AND e.date = '2026-02-01';
-
--- Duties for this week event
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 53, 10, 2, '21:00' FROM event e WHERE e.name = 'Weekly Social - This Week' AND e.date = '2026-02-05';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 54, 10, 1, '21:00' FROM event e WHERE e.name = 'Weekly Social - This Week' AND e.date = '2026-02-05';
-
--- Assignment for last week (completed)
-INSERT INTO event_duty_assignment (event_duty_id, brother_id, status_id)
-SELECT ed.id, b.id, s.id
-FROM event_duty ed
-JOIN event e ON e.id = ed.event_id
-JOIN brother b ON b.slack_id = 'U06F0AFB8F7'
-JOIN event_duty_assignment_status s ON s.name = 'completed'
-WHERE e.name = 'Weekly Social - Last Week (Sat)' AND e.date = '2026-01-31'
-LIMIT 1;
-
-INSERT INTO event_duty_assignment (event_duty_id, brother_id, status_id)
-SELECT ed.id, b.id, s.id
-FROM event_duty ed
-JOIN event e ON e.id = ed.event_id
-JOIN brother b ON b.slack_id = 'U08996EQFSS'
-JOIN event_duty_assignment_status s ON s.name = 'completed'
-WHERE e.name = 'Weekly Social - Last Week (Sun)' AND e.date = '2026-02-01'
-LIMIT 1;
-
--- Assignments for this week (signed up + assigned)
-INSERT INTO event_duty_assignment (event_duty_id, brother_id, status_id)
-SELECT ed.id, b.id, s.id
-FROM event_duty ed
-JOIN event e ON e.id = ed.event_id
-JOIN brother b ON b.slack_id = 'U0400NY44DS'
-JOIN event_duty_assignment_status s ON s.name = 'signed_up'
-WHERE e.name = 'Weekly Social - This Week' AND e.date = '2026-02-05'
-LIMIT 1;
-
-INSERT INTO event_duty_assignment (event_duty_id, brother_id, status_id)
-SELECT ed.id, b.id, s.id
-FROM event_duty ed
-JOIN event e ON e.id = ed.event_id
-JOIN brother b ON b.slack_id = 'U04L0MWLR27'
-JOIN event_duty_assignment_status s ON s.name = 'assigned'
-WHERE e.name = 'Weekly Social - This Week' AND e.date = '2026-02-05'
-LIMIT 1;
-
--- =========================
--- POINT ADJUSTMENTS (ADMIN)
--- =========================
-INSERT INTO point_adjustment (brother_id, event_id, amount, reason, created_by, created_at)
-SELECT b.id, e.id, 15, 'Admin bonus', admin.id, datetime('now')
-FROM brother b
-JOIN brother admin ON admin.slack_id = 'seed_16'
-JOIN event e ON e.name = 'Philigher' AND e.date = '2026-01-24'
-WHERE b.slack_id = 'seed_1';
-
-INSERT INTO point_adjustment (brother_id, event_id, amount, reason, created_by, created_at)
-SELECT b.id, e.id, -5, 'Admin adjustment', admin.id, datetime('now')
-FROM brother b
-JOIN brother admin ON admin.slack_id = 'seed_16'
-JOIN event e ON e.name = 'Philigher' AND e.date = '2026-01-24'
-WHERE b.slack_id = 'seed_2';
-
--- Setup duties (due by 20:00)
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 4, 6, 4, '20:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 18, 8, 2, '20:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 20, 5, 2, '20:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 5, 6, 4, '20:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-
--- Purchase duties (due by 21:00)
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 42, 8, 1, '21:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 43, 8, 1, '21:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 44, 8, 1, '21:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-
--- Cleanup duties (due by 12:00)
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 26, 8, 2, '12:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 38, 7, 2, '12:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 39, 5, 2, '12:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-
--- Pregame (21:00-22:00)
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 53, 10, 1, '21:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 52, 10, 1, '21:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-
--- During (22:00-02:00) Door + DJ slots
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 53, 10, 3, '22:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 54, 10, 1, '22:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 53, 10, 3, '23:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 54, 10, 1, '23:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 53, 10, 3, '00:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 54, 10, 1, '00:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 53, 10, 3, '01:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
-INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
-SELECT e.id, 54, 10, 1, '01:00' FROM event e WHERE e.name = 'Philigher' AND e.date = '2026-01-24';
+  ('Philighter Open', (SELECT id FROM event_definition WHERE name = 'Open party'), '2026-01-24', '21:00', '23:30'),
+  ('BPK', (SELECT id FROM event_definition WHERE name = 'BPK'), '2026-01-29', '21:00', '23:30'),
+  ('Case Race', (SELECT id FROM event_definition WHERE name = 'Special'), '2026-01-31', '20:00', '22:00'),
+  ('Die Day', (SELECT id FROM event_definition WHERE name = 'Special'), '2026-02-03', '20:00', '22:00'),
+  ('BPK', (SELECT id FROM event_definition WHERE name = 'BPK'), '2026-02-05', '21:00', '23:30'),
+  ('Super Bowl Watch Party', (SELECT id FROM event_definition WHERE name = 'Brotherhood'), '2026-02-08', '18:00', '21:00'),
+  ('Champagne and Shackles', (SELECT id FROM event_definition WHERE name = 'Open party'), '2026-02-12', '21:00', '23:30'),
+  ('Valentines Party', (SELECT id FROM event_definition WHERE name = 'Open party'), '2026-02-13', '21:00', '23:30'),
+  ('PC Mixer', (SELECT id FROM event_definition WHERE name = 'Open party'), '2026-02-19', '20:00', '22:30'),
+  ('AGD PC Mixer', (SELECT id FROM event_definition WHERE name = 'Open party'), '2026-02-26', '20:00', '22:30'),
+  ('BPK', (SELECT id FROM event_definition WHERE name = 'BPK'), '2026-03-05', '21:00', '23:30'),
+  ('Date Night', (SELECT id FROM event_definition WHERE name = 'Date night'), '2026-03-12', '20:00', '22:00'),
+  ('St Patties Open', (SELECT id FROM event_definition WHERE name = 'Open party'), '2026-03-13', '21:00', '23:30'),
+  ('Phi Mu Mixer', (SELECT id FROM event_definition WHERE name = 'Open party'), '2026-03-19', '20:00', '22:30'),
+  ('BPK', (SELECT id FROM event_definition WHERE name = 'BPK'), '2026-04-02', '21:00', '23:30'),
+  ('Closed Party', (SELECT id FROM event_definition WHERE name = 'Closed party'), '2026-04-03', '21:00', '23:30'),
+  ('Formal', (SELECT id FROM event_definition WHERE name = 'Special'), '2026-04-17', '19:00', '23:00'),
+  ('Formal', (SELECT id FROM event_definition WHERE name = 'Special'), '2026-04-19', '19:00', '23:00'),
+  ('BPK', (SELECT id FROM event_definition WHERE name = 'BPK'), '2026-04-23', '21:00', '23:30'),
+  ('Ice Cream Social', (SELECT id FROM event_definition WHERE name = 'Special'), '2026-04-28', '19:00', '21:00');

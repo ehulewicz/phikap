@@ -36,6 +36,11 @@ import {
 } from "./endpoints/events";
 
 const app = new Hono<{ Bindings: Env }>();
+app.onError((err, c) => {
+	console.error("Unhandled error", err);
+	const message = err instanceof Error ? err.message : "Internal Server Error";
+	return c.text(message || "Internal Server Error", 500);
+});
 app.use(
 	"*",
 	cors({

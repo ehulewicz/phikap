@@ -170,12 +170,22 @@ export class AssignmentCreate extends OpenAPIRoute {
 			);
 		}
 
+		const statusRow = await c.env.phikap_db
+			.prepare(
+				`SELECT id
+				 FROM event_duty_assignment_status
+				 WHERE name = ?`
+			)
+			.bind("signed_up")
+			.first();
+		const signedUpStatusId = Number(statusRow?.id ?? 1);
+
 		const insert = await c.env.phikap_db
 			.prepare(
 				`INSERT INTO event_duty_assignment (event_duty_id, brother_id, status_id)
-				 VALUES (?, ?, COALESCE(?, 1))`
+				 VALUES (?, ?, ?)`
 			)
-			.bind(event_duty_id, brother_id, status_id ?? null)
+			.bind(event_duty_id, brother_id, status_id ?? signedUpStatusId)
 			.run();
 
 		const id = Number(insert.meta.last_row_id);
