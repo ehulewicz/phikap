@@ -10,6 +10,56 @@ ________________________________________________________________________________
   - Usage:
     - paths.events.dutyAssignments(eventId, eventDutyId)
 
+- API CONTRACT (PRIMARY)
+    - All list endpoints accept pagination:
+        - page (1-based)
+        - page_size (max 100)
+        - response returns { success, data..., meta: { page, page_size, total, total_pages } }
+
+    - /brothers
+        - GET /brothers
+            - query: role_ids (repeat), order_by=points|name, order=asc|desc, page, page_size
+            - returns points (calculated), last_semester_points, role_id, phone_number
+        - POST /brothers/:brother_id/points
+            - body: { event_id, amount, reason }
+            - creates a point_adjustment entry tied to the event
+
+    - /events
+        - GET /events
+            - query: from, to, include_duties (true|false), page, page_size
+        - POST /events
+            - body: { name, event_definition_id, date, start_time, end_time }
+        - GET /events/:event_id
+
+    - /duties (PRIMARY, flat filter endpoints)
+        - GET /duties?event_id=...
+        - POST /duties (create event duty)
+
+    - /assignments (PRIMARY, flat filter endpoints)
+        - GET /assignments?event_id=...&event_duty_id=...&brother_id=...
+        - POST /assignments (sign up)
+        - PUT /assignments/:assignment_id (status update)
+        - DELETE /assignments/:assignment_id (drop)
+
+    - /eventDefinitions
+        - GET /eventDefinitions
+        - POST /eventDefinitions
+        - GET /eventDefinitions/:event_definition_id/duties
+
+    - /dutyDefinitions
+        - GET /dutyDefinitions
+        - POST /dutyDefinitions
+
+    - /auth (late stage)
+        - POST /auth/login
+        - POST /auth/logout
+        - POST /auth/reset
+        - PUT /auth
+
+- API CONTRACT (SECONDARY / COMPAT)
+    - /events/:event_id/duties
+    - /events/:event_id/duties/:event_duty_id/assignments
+
 - /auth
     - POST /auth/login
         - create session
@@ -24,15 +74,21 @@ ________________________________________________________________________________
         - updates password
 
 - /brothers
-    - calculatePoints = .75 * last_semester_points + admin_points + SUM( SELECT * FROM event_duty_assignment WHERE brother_id )
+    - calculatePoints =
+        0.75 * last_semester_points
+        + SUM(completed event_duty points for brother)
+        + SUM(point_adjustment.amount for brother)
+
+    - All manual/admin points are ledger entries tied to an event (point_adjustment.event_id NOT NULL).
 
     - GET { points: calculatePoints } rather than getting both fields. The total points is all that will ever be used
     - GET /brothers
         - ability to order by by points( calculated ) or name asc/desc
         - ability to filter by 1+ roles ( only return values of those roles )
+        - pagination (page/page_size)
         - base request return should be natrually sorted highest->lowest points ( alphabetical for instances of same points )
     - PUT /brothers/brother
-        - updating points will update admin points
+        - updating points will create a point_adjustment entry tied to a chosen event
         - will only be used on page 3.
 
 - /events
@@ -45,6 +101,11 @@ ________________________________________________________________________________
 
 - /duties
 - /dutyDefitions
+
+OPEN QUESTION
+__________________________________________________________________________________________________________
+- Route shape locked: primary flat filter endpoints (/duties, /assignments), keep nested
+  routes as secondary for compatibility/docs.
 
 
 PAGES AND LOGIC
@@ -108,7 +169,7 @@ ________________________________________________________________________________
 2. Home Page
     - Calendar showing all events. Clicking an event on the calendar will bring you to page #1 with that event selected.
     - Display for all duties you are currently signed up for
-        
+
 3. Brother List
     - Dispaly name, points (current total calculated), role, phone number
     - Ability to sort the following columns ascending/descending
@@ -131,3 +192,11 @@ ________________________________________________________________________________
     - Add new event type defintion
         - duties
         - edit default points/spots
+
+
+
+
+![alt text](image.png) for an example of what the ui should look similar too (other frat website and want to stay similar)
+
+
+water bottle for open parties
