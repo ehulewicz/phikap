@@ -126,6 +126,7 @@ function App() {
     "event_definitions" | "events" | "duty_definitions"
   >("events");
   const [adminItemId, setAdminItemId] = useState<number | "new">("new");
+  const [adminNavTarget, setAdminNavTarget] = useState<number | null>(null);
   const [, setAdminLoading] = useState(false);
   const [eventDefinitions, setEventDefinitions] = useState<EventDefinition[]>([]);
   const [dutyDefinitions, setDutyDefinitions] = useState<DutyDefinition[]>([]);
@@ -823,9 +824,15 @@ function App() {
 
   useEffect(() => {
     if (view !== "admin") return;
+    if (adminNavTarget) {
+      setAdminEntity("events");
+      setAdminItemId(adminNavTarget);
+      setAdminNavTarget(null);
+      return;
+    }
     setAdminEntity("events");
     setAdminItemId("new");
-  }, [view]);
+  }, [view, adminNavTarget]);
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin || view !== "admin") return;
@@ -1586,9 +1593,8 @@ function App() {
   const handleEventClick = (eventId: number, clickEvent: MouseEvent<HTMLButtonElement>) => {
     if (isAdmin && (clickEvent.ctrlKey || clickEvent.metaKey)) {
       clickEvent.preventDefault();
+      setAdminNavTarget(eventId);
       setView("admin");
-      setAdminEntity("events");
-      setAdminItemId(eventId);
       return;
     }
     setSelectedEventId(eventId);

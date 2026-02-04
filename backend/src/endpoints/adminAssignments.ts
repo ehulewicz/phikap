@@ -15,8 +15,11 @@ const toDateKey = (date: Date) => {
 };
 
 const getWeekRange = (baseDate: Date) => {
-	const start = new Date(baseDate);
-	start.setDate(baseDate.getDate() - baseDate.getDay());
+	const date = new Date(baseDate);
+	const day = date.getDay();
+	const diffToTuesday = (day + 5) % 7;
+	const start = new Date(date);
+	start.setDate(date.getDate() - diffToTuesday);
 	start.setHours(0, 0, 0, 0);
 	const end = new Date(start);
 	end.setDate(start.getDate() + 6);
@@ -81,14 +84,8 @@ export class AdminUnlockWeek extends OpenAPIRoute {
 
 	async handle(c: AppContext) {
 		const { start, end } = getWeekRange(new Date());
-		const weekendStart = new Date(start);
-		weekendStart.setDate(start.getDate() + 4);
-		weekendStart.setHours(0, 0, 0, 0);
-		const weekendEnd = new Date(start);
-		weekendEnd.setDate(start.getDate() + 7);
-		weekendEnd.setHours(23, 59, 59, 999);
-		const startKey = toDateKey(weekendStart);
-		const endKey = toDateKey(weekendEnd);
+		const startKey = toDateKey(start);
+		const endKey = toDateKey(end);
 
 		const result = await c.env.phikap_db
 			.prepare(
@@ -128,14 +125,8 @@ export class AdminAssignWeek extends OpenAPIRoute {
 
 	async handle(c: AppContext) {
 		const { start, end } = getWeekRange(new Date());
-		const weekendStart = new Date(start);
-		weekendStart.setDate(start.getDate() + 4);
-		weekendStart.setHours(0, 0, 0, 0);
-		const weekendEnd = new Date(start);
-		weekendEnd.setDate(start.getDate() + 7);
-		weekendEnd.setHours(23, 59, 59, 999);
-		const startKey = toDateKey(weekendStart);
-		const endKey = toDateKey(weekendEnd);
+		const startKey = toDateKey(start);
+		const endKey = toDateKey(end);
 
 		const eventsResult = await c.env.phikap_db
 			.prepare(
