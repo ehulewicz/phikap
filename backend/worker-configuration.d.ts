@@ -6,7 +6,6 @@ declare namespace Cloudflare {
 		mainModule: typeof import("./src/index");
 	}
 	interface Env {
-		AUTH_PEPPER: string;
 		phikap_db: D1Database;
 	}
 }

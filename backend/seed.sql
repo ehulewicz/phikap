@@ -297,3 +297,14 @@ VALUES
   ('Formal', (SELECT id FROM event_definition WHERE name = 'Special'), '2026-04-19', '19:00', '23:00'),
   ('BPK', (SELECT id FROM event_definition WHERE name = 'BPK'), '2026-04-23', '21:00', '23:30'),
   ('Ice Cream Social', (SELECT id FROM event_definition WHERE name = 'Special'), '2026-04-28', '19:00', '21:00');
+
+-- Seed duties for all calendar events based on their event definition defaults
+INSERT INTO event_duty (event_id, duty_definition_id, points, required_brothers, time)
+SELECT
+  e.id,
+  ed.duty_definition_id,
+  ed.default_points,
+  ed.default_required_brothers,
+  COALESCE(ed.default_time, e.start_time)
+FROM event e
+JOIN event_definition_duty ed ON ed.event_definition_id = e.event_definition_id;

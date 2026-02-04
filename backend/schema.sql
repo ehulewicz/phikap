@@ -79,6 +79,7 @@ CREATE TABLE event_definition_duty (
 
     default_points INTEGER NOT NULL,
     default_required_brothers INTEGER NOT NULL,
+    default_time TEXT,
 
     UNIQUE (event_definition_id, duty_definition_id),
     FOREIGN KEY (event_definition_id) REFERENCES event_definition(id),

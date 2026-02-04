@@ -126,7 +126,7 @@ function App() {
     "event_definitions" | "events" | "duty_definitions"
   >("events");
   const [adminItemId, setAdminItemId] = useState<number | "new">("new");
-  const [adminLoading, setAdminLoading] = useState(false);
+  const [, setAdminLoading] = useState(false);
   const [eventDefinitions, setEventDefinitions] = useState<EventDefinition[]>([]);
   const [dutyDefinitions, setDutyDefinitions] = useState<DutyDefinition[]>([]);
   const [dutyTypes, setDutyTypes] = useState<DutyType[]>([]);
@@ -495,7 +495,7 @@ function App() {
   ]);
 
   useEffect(() => {
-    const handleClick = (event: MouseEvent) => {
+    const handleClick = (event: globalThis.MouseEvent) => {
       if (!statusFilterOpen) return;
       const target = event.target as Node | null;
       if (statusFilterRef.current && target && !statusFilterRef.current.contains(target)) {
@@ -550,16 +550,6 @@ function App() {
   const parseDate = (date: string) => {
     const [year, month, day] = date.split("-").map((part) => Number(part));
     return new Date(year, month - 1, day);
-  };
-
-  const getWeekRange = (baseDate: Date) => {
-    const start = new Date(baseDate);
-    start.setDate(baseDate.getDate() - baseDate.getDay());
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
   };
 
   const getCalendarWeekRange = (baseDate: Date) => {
