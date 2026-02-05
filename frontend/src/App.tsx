@@ -2095,6 +2095,12 @@ function App() {
   };
 
   const handleEventClick = (eventId: number, clickEvent: MouseEvent<HTMLButtonElement>) => {
+    if (isAdmin && (clickEvent.ctrlKey || clickEvent.metaKey)) {
+      clickEvent.preventDefault();
+      setAdminNavTarget(eventId);
+      setView("admin");
+      return;
+    }
     setSelectedEventId(eventId);
     setView("duties");
   };

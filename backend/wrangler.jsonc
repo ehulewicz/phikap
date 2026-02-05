@@ -14,7 +14,8 @@
 		{
 			"binding": "phikap_db",
 			"database_name": "phikap-db",
-			"database_id": "6c700fcc-6b5d-47b1-af9a-48c95ea6b9d0"
+			// "database_id": "6c700fcc-6b5d-47b1-af9a-48c95ea6b9d0"
+			"database_id": "f92e163f-583a-4baa-a806-6dd0018661ba"
 		}
 	]
 	/**
