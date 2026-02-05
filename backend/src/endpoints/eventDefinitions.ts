@@ -7,6 +7,7 @@ const EventDefinition = z.object({
 	id: z.number(),
 	name: z.string(),
 	admin_points: z.number(),
+	default_start_time: z.string().nullable().optional(),
 });
 
 const EventDefinitionDuty = z.object({
@@ -56,7 +57,7 @@ export class EventDefinitionList extends OpenAPIRoute {
 
 		const result = await c.env.phikap_db
 			.prepare(
-				`SELECT id, name, admin_points
+				`SELECT id, name, admin_points, default_start_time
 				 FROM event_definition
 				 ORDER BY id
 				 LIMIT ? OFFSET ?`
@@ -91,6 +92,7 @@ export class EventDefinitionCreate extends OpenAPIRoute {
 						schema: z.object({
 							name: z.string(),
 							admin_points: z.number().int().default(10),
+							default_start_time: z.string().nullable().optional(),
 							duties: z
 								.array(
 									z.object({
@@ -123,13 +125,13 @@ export class EventDefinitionCreate extends OpenAPIRoute {
 
 	async handle(c: AppContext) {
 		const data = await this.getValidatedData<typeof this.schema>();
-		const { name, admin_points, duties } = data.body;
+		const { name, admin_points, default_start_time, duties } = data.body;
 
 		const insert = await c.env.phikap_db
 			.prepare(
-				"INSERT INTO event_definition (name, admin_points) VALUES (?, ?)"
+				"INSERT INTO event_definition (name, admin_points, default_start_time) VALUES (?, ?, ?)"
 			)
-			.bind(name, admin_points)
+			.bind(name, admin_points, default_start_time ?? null)
 			.run();
 
 		const eventDefinitionId = Number(insert.meta.last_row_id);
@@ -153,7 +155,9 @@ export class EventDefinitionCreate extends OpenAPIRoute {
 		}
 
 		const created = await c.env.phikap_db
-			.prepare("SELECT id, name, admin_points FROM event_definition WHERE id = ?")
+			.prepare(
+				"SELECT id, name, admin_points, default_start_time FROM event_definition WHERE id = ?"
+			)
 			.bind(eventDefinitionId)
 			.first();
 
@@ -178,6 +182,7 @@ export class EventDefinitionUpdate extends OpenAPIRoute {
 						schema: z.object({
 							name: z.string(),
 							admin_points: z.number().int(),
+							default_start_time: z.string().nullable().optional(),
 						}),
 					},
 				},
@@ -201,19 +206,21 @@ export class EventDefinitionUpdate extends OpenAPIRoute {
 	async handle(c: AppContext) {
 		const data = await this.getValidatedData<typeof this.schema>();
 		const { event_definition_id } = data.params;
-		const { name, admin_points } = data.body;
+		const { name, admin_points, default_start_time } = data.body;
 
 		await c.env.phikap_db
 			.prepare(
 				`UPDATE event_definition
-				 SET name = ?, admin_points = ?
+				 SET name = ?, admin_points = ?, default_start_time = COALESCE(?, default_start_time)
 				 WHERE id = ?`
 			)
-			.bind(name, admin_points, event_definition_id)
+			.bind(name, admin_points, default_start_time ?? null, event_definition_id)
 			.run();
 
 		const updated = await c.env.phikap_db
-			.prepare("SELECT id, name, admin_points FROM event_definition WHERE id = ?")
+			.prepare(
+				"SELECT id, name, admin_points, default_start_time FROM event_definition WHERE id = ?"
+			)
 			.bind(event_definition_id)
 			.first();
 

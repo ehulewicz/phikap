@@ -47,6 +47,49 @@ const Assignment = z.object({
 	status_id: z.number(),
 });
 
+const DUTY_TYPE_CLEANUP_ID = 2;
+const MINUTES_PER_DAY = 24 * 60;
+
+const parseTimeToMinutes = (time: string) => {
+	const [hours, minutes] = time.split(":").map((value) => Number(value));
+	if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+		return 0;
+	}
+	return hours * 60 + minutes;
+};
+
+const minutesToTime = (minutes: number) => {
+	const normalized =
+		((minutes % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+	const hours = Math.floor(normalized / 60);
+	const mins = normalized % 60;
+	return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+};
+
+const shiftTime = (baseTime: string, fromTime: string, toTime: string) => {
+	const delta = parseTimeToMinutes(toTime) - parseTimeToMinutes(fromTime);
+	return minutesToTime(parseTimeToMinutes(baseTime) + delta);
+};
+
+const resolveDefaultTime = (options: {
+	defaultTime: string | null;
+	eventStartTime: string;
+	definitionStartTime: string | null;
+	dutyTypeId: number;
+}) => {
+	const { defaultTime, eventStartTime, definitionStartTime, dutyTypeId } = options;
+	if (!defaultTime) {
+		return eventStartTime;
+	}
+	if (dutyTypeId === DUTY_TYPE_CLEANUP_ID) {
+		return defaultTime;
+	}
+	if (!definitionStartTime) {
+		return defaultTime;
+	}
+	return shiftTime(defaultTime, definitionStartTime, eventStartTime);
+};
+
 export class EventList extends OpenAPIRoute {
 	schema = {
 		tags: ["Events"],
@@ -238,11 +281,28 @@ export class EventCreate extends OpenAPIRoute {
 			overridesMap.set(duty.duty_definition_id, duty);
 		}
 
+		const definitionResult = await c.env.phikap_db
+			.prepare(
+				`SELECT default_start_time
+				 FROM event_definition
+				 WHERE id = ?`
+			)
+			.bind(event_definition_id)
+			.first();
+		const definitionStartTime =
+			(definitionResult?.default_start_time as string | null) ?? null;
+
 		if (include_default_duties) {
 			const defaults = await c.env.phikap_db
 				.prepare(
-					`SELECT duty_definition_id, default_points, default_required_brothers, default_time
+					`SELECT event_definition_duty.duty_definition_id,
+						event_definition_duty.default_points,
+						event_definition_duty.default_required_brothers,
+						event_definition_duty.default_time,
+						duty_definition.duty_type_id
 					 FROM event_definition_duty
+					 JOIN duty_definition
+						ON duty_definition.id = event_definition_duty.duty_definition_id
 					 WHERE event_definition_id = ?`
 				)
 				.bind(event_definition_id)
@@ -259,7 +319,13 @@ export class EventCreate extends OpenAPIRoute {
 					const points = override?.points ?? row.default_points;
 					const required = override?.required_brothers ?? row.default_required_brothers;
 					const time =
-						override?.time ?? (row.default_time as string | null) ?? start_time;
+						override?.time ??
+						resolveDefaultTime({
+							defaultTime: (row.default_time as string | null) ?? null,
+							eventStartTime: start_time,
+							definitionStartTime,
+							dutyTypeId: Number(row.duty_type_id),
+						});
 					return stmt.bind(eventId, row.duty_definition_id, points, required, time);
 				});
 				await c.env.phikap_db.batch(batch);
@@ -380,10 +446,27 @@ export class EventUpdate extends OpenAPIRoute {
 				.bind(event_id)
 				.run();
 
+			const definitionResult = await c.env.phikap_db
+				.prepare(
+					`SELECT default_start_time
+					 FROM event_definition
+					 WHERE id = ?`
+				)
+				.bind(event_definition_id)
+				.first();
+			const definitionStartTime =
+				(definitionResult?.default_start_time as string | null) ?? null;
+
 			const defaults = await c.env.phikap_db
 				.prepare(
-					`SELECT duty_definition_id, default_points, default_required_brothers, default_time
+					`SELECT event_definition_duty.duty_definition_id,
+						event_definition_duty.default_points,
+						event_definition_duty.default_required_brothers,
+						event_definition_duty.default_time,
+						duty_definition.duty_type_id
 					 FROM event_definition_duty
+					 JOIN duty_definition
+						ON duty_definition.id = event_definition_duty.duty_definition_id
 					 WHERE event_definition_id = ?`
 				)
 				.bind(event_definition_id)
@@ -401,7 +484,12 @@ export class EventUpdate extends OpenAPIRoute {
 						row.duty_definition_id,
 						row.default_points,
 						row.default_required_brothers,
-						(row.default_time as string | null) ?? start_time
+						resolveDefaultTime({
+							defaultTime: (row.default_time as string | null) ?? null,
+							eventStartTime: start_time,
+							definitionStartTime,
+							dutyTypeId: Number(row.duty_type_id),
+						})
 					)
 				);
 				await c.env.phikap_db.batch(batch);

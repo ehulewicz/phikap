@@ -53,6 +53,7 @@ type EventDefinition = {
 	id: number;
 	name: string;
 	admin_points: number;
+	default_start_time?: string | null;
 };
 
 type DutyType = {
@@ -145,6 +146,7 @@ function App() {
   }>({ duty_definition_id: "", default_points: "", default_required_brothers: "", default_time: "" });
   const [eventDefinitionName, setEventDefinitionName] = useState("");
   const [eventDefinitionAdminPoints, setEventDefinitionAdminPoints] = useState("10");
+  const [eventDefinitionDefaultStartTime, setEventDefinitionDefaultStartTime] = useState("");
   const [eventDefinitionTemplateId, setEventDefinitionTemplateId] = useState<number | "">("");
   const [eventDefinitionDutyDrafts, setEventDefinitionDutyDrafts] = useState<
     Array<{
@@ -172,6 +174,8 @@ function App() {
   const [eventDutyDraftRequired, setEventDutyDraftRequired] = useState("");
   const [eventDutyDraftTime, setEventDutyDraftTime] = useState("");
   const [isEditingEvent, setIsEditingEvent] = useState(false);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [preCreateEventId, setPreCreateEventId] = useState<number | "">("");
   const [dutyDefinitionTypeId, setDutyDefinitionTypeId] = useState<number | "">("");
   const [dutyDefinitionDescription, setDutyDefinitionDescription] = useState("");
   const [dutyDefinitionPoints, setDutyDefinitionPoints] = useState("");
@@ -727,6 +731,7 @@ function App() {
   const resetEventDefinitionForm = () => {
     setEventDefinitionName("");
     setEventDefinitionAdminPoints("10");
+    setEventDefinitionDefaultStartTime("");
     setEventDefinitionTemplateId("");
     setEventDefinitionDutyDrafts([
       {
@@ -758,6 +763,101 @@ function App() {
     setEventDutyDraftPoints("");
     setEventDutyDraftRequired("");
     setEventDutyDraftTime("");
+  };
+
+  const getDefinitionStartTime = (definitionId: number | "") => {
+    if (!definitionId) return "";
+    const definition = eventDefinitions.find((item) => item.id === definitionId);
+    return definition?.default_start_time ?? "";
+  };
+
+  const handleEventFormDefinitionChange = (value: string) => {
+    const nextId = value ? Number(value) : "";
+    setEventFormDefinitionId(nextId);
+    if (!nextId) return;
+    if (!eventFormStartTime) {
+      const defaultStart = getDefinitionStartTime(nextId);
+      if (defaultStart) {
+        setEventFormStartTime(defaultStart);
+      }
+    }
+  };
+
+  const openCreateEvent = (date?: string) => {
+    setNotice(null);
+    setError(null);
+    setIsEditingEvent(false);
+    if (!isCreatingEvent) {
+      setPreCreateEventId(typeof selectedEventId === "number" ? selectedEventId : "");
+    }
+    setSelectedEventId("");
+    setDuties([]);
+    setAssignments([]);
+    if (!isCreatingEvent) {
+      const previousDefinitionId = eventFormDefinitionId;
+      resetEventForm();
+      const nextDefinitionId =
+        previousDefinitionId || eventDefinitions[0]?.id || "";
+      if (nextDefinitionId) {
+        setEventFormDefinitionId(nextDefinitionId);
+        const defaultStart = getDefinitionStartTime(nextDefinitionId);
+        if (defaultStart) {
+          setEventFormStartTime(defaultStart);
+        }
+      }
+    }
+    if (date) {
+      setEventFormDate(date);
+    }
+    setIsCreatingEvent(true);
+  };
+
+  const handleCreateEvent = async () => {
+    const name = eventFormName.trim();
+    if (!name) {
+      setError("Enter an event name.");
+      return;
+    }
+    if (!eventFormDefinitionId) {
+      setError("Select an event definition.");
+      return;
+    }
+    if (!eventFormDate || !eventFormStartTime || !eventFormEndTime) {
+      setError("Enter the date, start time, and end time.");
+      return;
+    }
+
+    setNotice(null);
+    setError(null);
+    try {
+      const data = await fetchJson<{ success: boolean; event: EventItem | null }>(
+        paths.events.create(),
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name,
+            event_definition_id: Number(eventFormDefinitionId),
+            date: eventFormDate,
+            start_time: eventFormStartTime,
+            end_time: eventFormEndTime,
+            include_default_duties: eventIncludeDefaults,
+          }),
+        },
+      );
+      await refreshEvents();
+      await refreshAdminDuties();
+      setNotice("Event created.");
+      if (data.event?.id) {
+        setSelectedEventId(data.event.id);
+        setIsCreatingEvent(false);
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || "Unable to create event.");
+      } else {
+        setError("Unable to create event.");
+      }
+    }
   };
 
   const resetDutyDefinitionForm = () => {
@@ -923,6 +1023,7 @@ function App() {
     if (!selected) return;
     setEventDefinitionName(selected.name);
     setEventDefinitionAdminPoints(String(selected.admin_points));
+    setEventDefinitionDefaultStartTime(selected.default_start_time ?? "");
     setEventDefinitionTemplateId("");
     setEventDefinitionDutyAdd({
       duty_definition_id: "",
@@ -970,6 +1071,7 @@ function App() {
     const template = eventDefinitions.find((definition) => definition.id === nextId);
     if (template) {
       setEventDefinitionAdminPoints(String(template.admin_points));
+      setEventDefinitionDefaultStartTime(template.default_start_time ?? "");
       setEventDefinitionName((prev) => (prev ? prev : `${template.name} Copy`));
     }
 
@@ -1198,6 +1300,7 @@ function App() {
           setError("Admin points must be a number.");
           return;
         }
+        const defaultStartTime = eventDefinitionDefaultStartTime.trim() || null;
 
         const hasPartialDuty = eventDefinitionDutyDrafts.some((duty) => {
           const hasAny =
@@ -1238,6 +1341,7 @@ function App() {
               body: JSON.stringify({
                 name,
                 admin_points: adminPoints,
+                default_start_time: defaultStartTime,
                 duties: dutiesPayload.length ? dutiesPayload : undefined,
               }),
             },
@@ -1252,7 +1356,11 @@ function App() {
         } else {
           await fetchJson(paths.eventDefinitions.update(adminItemId), {
             method: "PUT",
-            body: JSON.stringify({ name, admin_points: adminPoints }),
+            body: JSON.stringify({
+              name,
+              admin_points: adminPoints,
+              default_start_time: defaultStartTime,
+            }),
           });
           await refreshEventDefinitions();
           setNotice("Event definition updated.");
@@ -1541,8 +1649,11 @@ function App() {
       setEventDutyDraftPoints((prev) => prev || String(definition.default_points));
       setEventDutyDraftRequired((prev) => prev || String(definition.default_required_brothers));
     }
-    if (!eventDutyDraftTime && eventFormStartTime) {
-      setEventDutyDraftTime(eventFormStartTime);
+    if (!eventDutyDraftTime) {
+      const baseTime = eventFormStartTime || eventEditStartTime || selectedEvent?.start_time || "";
+      if (baseTime) {
+        setEventDutyDraftTime(baseTime);
+      }
     }
   };
 
@@ -1680,6 +1791,76 @@ function App() {
       setEventDutyDraftPoints("");
       setEventDutyDraftRequired("");
       setEventDutyDraftTime(eventFormStartTime || "");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || "Unable to add duty.");
+      } else {
+        setError("Unable to add duty.");
+      }
+    }
+  };
+
+  const handleEventDutyAddFromList = async () => {
+    if (!selectedEventId) {
+      setError("Select an event first.");
+      return;
+    }
+    if (!eventDutyDraftDefinitionId) {
+      setError("Select a duty definition.");
+      return;
+    }
+    if (!eventDutyDraftPoints.trim() || !eventDutyDraftRequired.trim()) {
+      setError("Enter points and required brothers.");
+      return;
+    }
+    if (!eventDutyDraftTime) {
+      setError("Enter a duty time.");
+      return;
+    }
+    const points = Number(eventDutyDraftPoints);
+    const required = Number(eventDutyDraftRequired);
+    if (!Number.isFinite(points) || !Number.isFinite(required)) {
+      setError("Points and required brothers must be numbers.");
+      return;
+    }
+
+    setNotice(null);
+    setError(null);
+    try {
+      await fetchJson(paths.duties.create(), {
+        method: "POST",
+        body: JSON.stringify({
+          event_id: Number(selectedEventId),
+          duty_definition_id: Number(eventDutyDraftDefinitionId),
+          points,
+          required_brothers: required,
+          time: eventDutyDraftTime,
+        }),
+      });
+      const [dutyData, assignmentData] = await Promise.all([
+        fetchJson<{ success: boolean; duties: Duty[] }>(
+          `${paths.duties.list()}${buildQuery({
+            event_id: selectedEventId,
+            page: 1,
+            page_size: 100,
+          })}`,
+        ),
+        fetchJson<{ success: boolean; assignments: Assignment[] }>(
+          `${paths.assignments.list()}${buildQuery({
+            event_id: selectedEventId,
+            page: 1,
+            page_size: 100,
+          })}`,
+        ),
+      ]);
+      setDuties(dutyData.duties ?? []);
+      setAssignments(assignmentData.assignments ?? []);
+      setNotice("Duty added.");
+      setEventDutyDraftDefinitionId("");
+      setEventDutyDraftPoints("");
+      setEventDutyDraftRequired("");
+      const baseTime = eventEditStartTime || selectedEvent?.start_time || "";
+      setEventDutyDraftTime(baseTime);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message || "Unable to add duty.");
@@ -1918,6 +2099,12 @@ function App() {
     setView("duties");
   };
 
+  const handleCalendarDayDoubleClick = (dateKey: string) => {
+    if (!isAdmin) return;
+    openCreateEvent(dateKey);
+    setView("duties");
+  };
+
   const handleUnlockWeek = async () => {
     setNotice(null);
     setError(null);
@@ -2125,13 +2312,107 @@ function App() {
                     <button
                       className="ghost"
                       type="button"
-                      onClick={() => setIsEditingEvent((prev) => !prev)}
+                      onClick={() => {
+                        if (isCreatingEvent) {
+                          setIsCreatingEvent(false);
+                          if (typeof preCreateEventId === "number") {
+                            setSelectedEventId(preCreateEventId);
+                          }
+                          return;
+                        }
+                        openCreateEvent();
+                      }}
+                    >
+                      {isCreatingEvent ? "Cancel" : "New event"}
+                    </button>
+                  ) : null}
+                  {isAdmin ? (
+                    <button
+                      className="ghost"
+                      type="button"
+                      onClick={() => {
+                        setIsCreatingEvent(false);
+                        setIsEditingEvent((prev) => !prev);
+                      }}
                     >
                       Edit event
                     </button>
                   ) : null}
                 </div>
               </div>
+              {isAdmin && isCreatingEvent ? (
+                <div className="event-edit event-create">
+                  <div className="event-edit-grid">
+                    <div className="select-pill">
+                      <label htmlFor="event-create-name">Event name</label>
+                      <input
+                        id="event-create-name"
+                        className="text-input"
+                        type="text"
+                        value={eventFormName}
+                        onChange={(event) => setEventFormName(event.target.value)}
+                        placeholder="e.g. Philigher"
+                      />
+                    </div>
+                    <div className="select-pill">
+                      <label htmlFor="event-create-type">Event type</label>
+                      <select
+                        id="event-create-type"
+                        value={eventFormDefinitionId}
+                        onChange={(event) => handleEventFormDefinitionChange(event.target.value)}
+                      >
+                        <option value="">Select</option>
+                        {eventDefinitions.map((definition) => (
+                          <option key={definition.id} value={definition.id}>
+                            {definition.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="select-pill">
+                      <label htmlFor="event-create-date">Date</label>
+                      <input
+                        id="event-create-date"
+                        className="text-input"
+                        type="date"
+                        value={eventFormDate}
+                        onChange={(event) => setEventFormDate(event.target.value)}
+                      />
+                    </div>
+                    <div className="select-pill">
+                      <label htmlFor="event-create-start">Start time</label>
+                      <input
+                        id="event-create-start"
+                        className="text-input"
+                        type="time"
+                        value={eventFormStartTime}
+                        onChange={(event) => setEventFormStartTime(event.target.value)}
+                      />
+                    </div>
+                    <div className="select-pill">
+                      <label htmlFor="event-create-end">End time</label>
+                      <input
+                        id="event-create-end"
+                        className="text-input"
+                        type="time"
+                        value={eventFormEndTime}
+                        onChange={(event) => setEventFormEndTime(event.target.value)}
+                      />
+                    </div>
+                    <button className="primary action" type="button" onClick={handleCreateEvent}>
+                      Create event
+                    </button>
+                  </div>
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={eventIncludeDefaults}
+                      onChange={(event) => setEventIncludeDefaults(event.target.checked)}
+                    />
+                    <span>Seed default duties from the event definition</span>
+                  </label>
+                </div>
+              ) : null}
               {isAdmin && isEditingEvent ? (
                 <div className="event-edit">
                   <div className="event-edit-grid">
@@ -2183,6 +2464,61 @@ function App() {
                     >
                       {eventEditSaving ? "Saving..." : "Save event"}
                     </button>
+                  </div>
+                  <div className="admin-subsection">
+                    <div className="admin-subtitle">Add duty to event</div>
+                    <div className="admin-duty-row event-duty-add">
+                      <div className="select-pill">
+                        <label>Duty definition</label>
+                        <select
+                          value={eventDutyDraftDefinitionId || ""}
+                          onChange={(event) =>
+                            handleEventDutyDraftDefinitionChange(event.target.value)
+                          }
+                        >
+                          <option value="">Select</option>
+                          {sortedDutyDefinitions.map((definition) => (
+                            <option key={definition.id} value={definition.id}>
+                              {definition.description} ·{" "}
+                              {dutyTypeNameById.get(definition.duty_type_id) ??
+                                `Type ${definition.duty_type_id}`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="select-pill">
+                        <label>Points</label>
+                        <input
+                          className="text-input"
+                          type="number"
+                          min="0"
+                          value={eventDutyDraftPoints}
+                          onChange={(event) => setEventDutyDraftPoints(event.target.value)}
+                        />
+                      </div>
+                      <div className="select-pill">
+                        <label>Slots</label>
+                        <input
+                          className="text-input"
+                          type="number"
+                          min="1"
+                          value={eventDutyDraftRequired}
+                          onChange={(event) => setEventDutyDraftRequired(event.target.value)}
+                        />
+                      </div>
+                      <div className="select-pill">
+                        <label>Time</label>
+                        <input
+                          className="text-input"
+                          type="time"
+                          value={eventDutyDraftTime}
+                          onChange={(event) => setEventDutyDraftTime(event.target.value)}
+                        />
+                      </div>
+                      <button className="ghost small" type="button" onClick={handleEventDutyAddFromList}>
+                        Add
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -2354,6 +2690,7 @@ function App() {
                       className={`calendar-cell ${cell.inMonth ? "in" : "out"} ${
                         isToday ? "today" : ""
                       } ${isCurrentWeek ? "current-week" : ""}`}
+                      onDoubleClick={() => handleCalendarDayDoubleClick(dateKey)}
                     >
                       <div className="calendar-day-number">{cell.date.getDate()}</div>
                       {dayEvents.length > 0 ? (
@@ -2606,11 +2943,7 @@ function App() {
                     <select
                       id="admin-event-type"
                       value={eventFormDefinitionId}
-                      onChange={(event) =>
-                        setEventFormDefinitionId(
-                          event.target.value ? Number(event.target.value) : "",
-                        )
-                      }
+                      onChange={(event) => handleEventFormDefinitionChange(event.target.value)}
                     >
                       <option value="">Select</option>
                       {eventDefinitions.map((definition) => (
@@ -2655,6 +2988,16 @@ function App() {
                           type="number"
                           value={eventDefinitionAdminPoints}
                           onChange={(event) => setEventDefinitionAdminPoints(event.target.value)}
+                        />
+                      </div>
+                      <div className="select-pill">
+                        <label htmlFor="event-def-start-time">Default start time</label>
+                        <input
+                          id="event-def-start-time"
+                          className="text-input"
+                          type="time"
+                          value={eventDefinitionDefaultStartTime}
+                          onChange={(event) => setEventDefinitionDefaultStartTime(event.target.value)}
                         />
                       </div>
                       {adminItemId === "new" ? (

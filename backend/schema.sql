@@ -68,7 +68,8 @@ CREATE TABLE duty_definition (
 CREATE TABLE event_definition (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    admin_points INTEGER NOT NULL DEFAULT 10
+    admin_points INTEGER NOT NULL DEFAULT 10,
+    default_start_time TEXT
 );
 
 -- add defualt duties to event definitions

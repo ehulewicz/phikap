@@ -1,39 +1,12 @@
-PRAGMA defer_foreign_keys=TRUE;
-CREATE TABLE session (
-    id TEXT PRIMARY KEY,
-    brother_id INTEGER NOT NULL,
+-- Seed export of current local DB (data-only)
 
-    expires_at TEXT NOT NULL,
-    created_at TEXT NOT NULL,
+-- role
+INSERT INTO "role" VALUES(1,'active');
+INSERT INTO "role" VALUES(2,'inactive');
+INSERT INTO "role" VALUES(3,'senior');
+INSERT INTO "role" VALUES(4,'admin');
 
-    FOREIGN KEY (brother_id) REFERENCES brother(id)
-);
-INSERT INTO "session" VALUES('4b34cc6c-fe21-4060-a949-df8d53754979',10,'2026-03-07T17:18:57.735Z','2026-02-05 17:18:57');
-CREATE TABLE password_reset_token (
-    id TEXT PRIMARY KEY,
-    brother_id INTEGER NOT NULL,
-    code_hash TEXT NOT NULL,
-
-    expires_at TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-
-    FOREIGN KEY (brother_id) REFERENCES brother(id)
-);
-CREATE TABLE brother (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    phone_number TEXT,
-
-    slack_id TEXT NOT NULL UNIQUE,
-    password_hash TEXT,
-
-    last_semester_points INTEGER NOT NULL DEFAULT 0,
-    admin_points INTEGER NOT NULL DEFAULT 0,
-
-    role_id INTEGER NOT NULL DEFAULT 1,
-
-    FOREIGN KEY (role_id) REFERENCES role(id)
-);
+-- brother
 INSERT INTO "brother" VALUES(1,'Aditya Bilawar','6097217190','U06F0AFB8F7',NULL,165,0,1);
 INSERT INTO "brother" VALUES(2,'Alessandro Ferrari','6468215621','U0400NY1WN8',NULL,59,0,3);
 INSERT INTO "brother" VALUES(3,'Alexander Frawley','9179436262','U0400NYLXV2',NULL,281,0,3);
@@ -87,33 +60,17 @@ INSERT INTO "brother" VALUES(50,'Jay Townsend','6786749338','U05PVN4DELX',NULL,3
 INSERT INTO "brother" VALUES(51,'Dylan Curran','6178938362','U05QA5MS7D1',NULL,387,0,2);
 INSERT INTO "brother" VALUES(52,'Quinn OConnell','4012585269','U04SDB3LMGS',NULL,471,0,2);
 INSERT INTO "brother" VALUES(53,'Joe Shulman','4043749749','U07JBPZG8ES',NULL,537,0,2);
-CREATE TABLE role (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE
-);
-INSERT INTO "role" VALUES(1,'active');
-INSERT INTO "role" VALUES(2,'inactive');
-INSERT INTO "role" VALUES(3,'senior');
-INSERT INTO "role" VALUES(4,'admin');
-CREATE TABLE duty_type (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE
-);
+
+-- session
+INSERT INTO "session" VALUES('4b34cc6c-fe21-4060-a949-df8d53754979',10,'2026-03-07T17:18:57.735Z','2026-02-05 17:18:57');
+
+-- duty_type
 INSERT INTO "duty_type" VALUES(1,'Setup');
 INSERT INTO "duty_type" VALUES(2,'Cleanup');
 INSERT INTO "duty_type" VALUES(3,'Purchase');
 INSERT INTO "duty_type" VALUES(4,'During');
-CREATE TABLE duty_definition (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    duty_type_id INTEGER NOT NULL,
-    description TEXT NOT NULL,
 
-    default_points INTEGER NOT NULL,
-    default_required_brothers INTEGER NOT NULL,
-
-    UNIQUE (duty_type_id, description),
-    FOREIGN KEY (duty_type_id) REFERENCES duty_type(id)
-);
+-- duty_definition
 INSERT INTO "duty_definition" VALUES(1,1,'Draw banner design',8,1);
 INSERT INTO "duty_definition" VALUES(2,1,'Finish banner painting',8,1);
 INSERT INTO "duty_definition" VALUES(3,1,'Hang banner',5,1);
@@ -170,28 +127,14 @@ INSERT INTO "duty_definition" VALUES(54,4,'DJ',8,1);
 INSERT INTO "duty_definition" VALUES(55,4,'Grilling',7,1);
 INSERT INTO "duty_definition" VALUES(56,4,'Judge competition',6,1);
 INSERT INTO "duty_definition" VALUES(57,3,'Buy water bottles',8,1);
-CREATE TABLE event_definition (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
-    admin_points INTEGER NOT NULL DEFAULT 10
-);
-INSERT INTO "event_definition" VALUES(1,'BPK',15);
-INSERT INTO "event_definition" VALUES(2,'Open party',25);
-INSERT INTO "event_definition" VALUES(3,'Closed party',20);
-INSERT INTO "event_definition" VALUES(7,'Special',0);
-CREATE TABLE event_definition_duty (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    event_definition_id INTEGER NOT NULL,
-    duty_definition_id INTEGER NOT NULL,
 
-    default_points INTEGER NOT NULL,
-    default_required_brothers INTEGER NOT NULL,
-    default_time TEXT,
+-- event_definition
+INSERT INTO "event_definition" VALUES(1,'BPK',15,'21:00');
+INSERT INTO "event_definition" VALUES(2,'Open party',25,'21:00');
+INSERT INTO "event_definition" VALUES(3,'Closed party',20,'21:00');
+INSERT INTO "event_definition" VALUES(7,'Special',0,NULL);
 
-    UNIQUE (event_definition_id, duty_definition_id, default_time),
-    FOREIGN KEY (event_definition_id) REFERENCES event_definition(id),
-    FOREIGN KEY (duty_definition_id) REFERENCES duty_definition(id)
-);
+-- event_definition_duty
 INSERT INTO "event_definition_duty" VALUES(11,2,5,6,4,'20:00');
 INSERT INTO "event_definition_duty" VALUES(12,2,26,8,2,'23:30');
 INSERT INTO "event_definition_duty" VALUES(13,2,8,3,2,'20:00');
@@ -302,20 +245,8 @@ INSERT INTO "event_definition_duty" VALUES(271,3,53,10,2,'23:00');
 INSERT INTO "event_definition_duty" VALUES(272,3,53,10,2,'00:00');
 INSERT INTO "event_definition_duty" VALUES(273,3,53,10,2,'01:00');
 INSERT INTO "event_definition_duty" VALUES(274,2,52,10,1,'21:00');
-CREATE TABLE event (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    event_definition_id INTEGER NOT NULL,
 
-    date TEXT NOT NULL,
-    start_time TEXT NOT NULL,
-    end_time TEXT NOT NULL,
-
-    duties_unlocked INTEGER NOT NULL DEFAULT 0,
-
-    UNIQUE (event_definition_id, date, start_time),
-    FOREIGN KEY (event_definition_id) REFERENCES event_definition(id)
-);
+-- event
 INSERT INTO "event" VALUES(1,'Philighter Open',2,'2026-01-24','21:00','23:30',0);
 INSERT INTO "event" VALUES(2,'BPK',1,'2026-01-29','21:00','23:30',0);
 INSERT INTO "event" VALUES(3,'Case Race',7,'2026-01-31','20:00','22:00',0);
@@ -335,39 +266,15 @@ INSERT INTO "event" VALUES(17,'Formal',7,'2026-04-17','19:00','23:00',0);
 INSERT INTO "event" VALUES(18,'Formal',7,'2026-04-19','19:00','23:00',0);
 INSERT INTO "event" VALUES(19,'BPK',1,'2026-04-23','21:00','23:30',0);
 INSERT INTO "event" VALUES(20,'Ice Cream Social',7,'2026-04-28','19:00','21:00',0);
-CREATE TABLE point_adjustment (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    brother_id INTEGER NOT NULL,
-    event_id INTEGER NOT NULL,
-    amount INTEGER NOT NULL,
-    reason TEXT,
-    created_by INTEGER,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
 
-    FOREIGN KEY (brother_id) REFERENCES brother(id),
-    FOREIGN KEY (event_id) REFERENCES event(id),
-    FOREIGN KEY (created_by) REFERENCES brother(id)
-);
-CREATE TABLE event_duty (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    event_id INTEGER NOT NULL,
-    duty_definition_id INTEGER NOT NULL,
-
-    points INTEGER NOT NULL,
-    required_brothers INTEGER NOT NULL,
-
-    time TEXT NOT NULL,
-
-    FOREIGN KEY (event_id) REFERENCES event(id),
-    FOREIGN KEY (duty_definition_id) REFERENCES duty_definition(id)
-);
+-- event_duty
 INSERT INTO "event_duty" VALUES(1,1,5,6,4,'20:00');
 INSERT INTO "event_duty" VALUES(2,7,5,6,4,'20:00');
 INSERT INTO "event_duty" VALUES(3,8,5,6,4,'20:00');
-INSERT INTO "event_duty" VALUES(4,9,5,6,4,'20:00');
-INSERT INTO "event_duty" VALUES(5,10,5,6,4,'20:00');
+INSERT INTO "event_duty" VALUES(4,9,5,6,4,'19:00');
+INSERT INTO "event_duty" VALUES(5,10,5,6,4,'19:00');
 INSERT INTO "event_duty" VALUES(6,13,5,6,4,'20:00');
-INSERT INTO "event_duty" VALUES(7,14,5,6,4,'20:00');
+INSERT INTO "event_duty" VALUES(7,14,5,6,4,'19:00');
 INSERT INTO "event_duty" VALUES(8,1,26,8,2,'23:30');
 INSERT INTO "event_duty" VALUES(9,7,26,8,2,'23:30');
 INSERT INTO "event_duty" VALUES(10,8,26,8,2,'23:30');
@@ -378,24 +285,24 @@ INSERT INTO "event_duty" VALUES(14,14,26,8,2,'23:30');
 INSERT INTO "event_duty" VALUES(15,1,8,3,2,'20:00');
 INSERT INTO "event_duty" VALUES(16,7,8,3,2,'20:00');
 INSERT INTO "event_duty" VALUES(17,8,8,3,2,'20:00');
-INSERT INTO "event_duty" VALUES(18,9,8,3,2,'20:00');
-INSERT INTO "event_duty" VALUES(19,10,8,3,2,'20:00');
+INSERT INTO "event_duty" VALUES(18,9,8,3,2,'19:00');
+INSERT INTO "event_duty" VALUES(19,10,8,3,2,'19:00');
 INSERT INTO "event_duty" VALUES(20,13,8,3,2,'20:00');
-INSERT INTO "event_duty" VALUES(21,14,8,3,2,'20:00');
+INSERT INTO "event_duty" VALUES(21,14,8,3,2,'19:00');
 INSERT INTO "event_duty" VALUES(22,1,18,8,2,'20:00');
 INSERT INTO "event_duty" VALUES(23,7,18,8,2,'20:00');
 INSERT INTO "event_duty" VALUES(24,8,18,8,2,'20:00');
-INSERT INTO "event_duty" VALUES(25,9,18,8,2,'20:00');
-INSERT INTO "event_duty" VALUES(26,10,18,8,2,'20:00');
+INSERT INTO "event_duty" VALUES(25,9,18,8,2,'19:00');
+INSERT INTO "event_duty" VALUES(26,10,18,8,2,'19:00');
 INSERT INTO "event_duty" VALUES(27,13,18,8,2,'20:00');
-INSERT INTO "event_duty" VALUES(28,14,18,8,2,'20:00');
+INSERT INTO "event_duty" VALUES(28,14,18,8,2,'19:00');
 INSERT INTO "event_duty" VALUES(29,1,20,5,2,'20:00');
 INSERT INTO "event_duty" VALUES(30,7,20,5,2,'20:00');
 INSERT INTO "event_duty" VALUES(31,8,20,5,2,'20:00');
-INSERT INTO "event_duty" VALUES(32,9,20,5,2,'20:00');
-INSERT INTO "event_duty" VALUES(33,10,20,5,2,'20:00');
+INSERT INTO "event_duty" VALUES(32,9,20,5,2,'19:00');
+INSERT INTO "event_duty" VALUES(33,10,20,5,2,'19:00');
 INSERT INTO "event_duty" VALUES(34,13,20,5,2,'20:00');
-INSERT INTO "event_duty" VALUES(35,14,20,5,2,'20:00');
+INSERT INTO "event_duty" VALUES(35,14,20,5,2,'19:00');
 INSERT INTO "event_duty" VALUES(36,1,28,3,2,'23:30');
 INSERT INTO "event_duty" VALUES(37,7,28,3,2,'23:30');
 INSERT INTO "event_duty" VALUES(38,8,28,3,2,'23:30');
@@ -420,17 +327,17 @@ INSERT INTO "event_duty" VALUES(56,14,39,5,2,'23:30');
 INSERT INTO "event_duty" VALUES(57,1,51,30,4,'21:00');
 INSERT INTO "event_duty" VALUES(58,7,51,30,4,'21:00');
 INSERT INTO "event_duty" VALUES(59,8,51,30,4,'21:00');
-INSERT INTO "event_duty" VALUES(60,9,51,30,4,'21:00');
-INSERT INTO "event_duty" VALUES(61,10,51,30,4,'21:00');
+INSERT INTO "event_duty" VALUES(60,9,51,30,4,'20:00');
+INSERT INTO "event_duty" VALUES(61,10,51,30,4,'20:00');
 INSERT INTO "event_duty" VALUES(62,13,51,30,4,'21:00');
-INSERT INTO "event_duty" VALUES(63,14,51,30,4,'21:00');
+INSERT INTO "event_duty" VALUES(63,14,51,30,4,'20:00');
 INSERT INTO "event_duty" VALUES(64,1,55,10,1,'21:00');
 INSERT INTO "event_duty" VALUES(65,7,55,10,1,'21:00');
 INSERT INTO "event_duty" VALUES(66,8,55,10,1,'21:00');
-INSERT INTO "event_duty" VALUES(67,9,55,10,1,'21:00');
-INSERT INTO "event_duty" VALUES(68,10,55,10,1,'21:00');
+INSERT INTO "event_duty" VALUES(67,9,55,10,1,'20:00');
+INSERT INTO "event_duty" VALUES(68,10,55,10,1,'20:00');
 INSERT INTO "event_duty" VALUES(69,13,55,10,1,'21:00');
-INSERT INTO "event_duty" VALUES(70,14,55,10,1,'21:00');
+INSERT INTO "event_duty" VALUES(70,14,55,10,1,'20:00');
 INSERT INTO "event_duty" VALUES(71,16,8,3,2,'20:00');
 INSERT INTO "event_duty" VALUES(72,16,18,8,2,'20:00');
 INSERT INTO "event_duty" VALUES(73,16,20,5,2,'20:00');
@@ -440,67 +347,67 @@ INSERT INTO "event_duty" VALUES(76,16,39,5,2,'23:30');
 INSERT INTO "event_duty" VALUES(77,16,51,30,5,'21:00');
 INSERT INTO "event_duty" VALUES(78,16,55,10,1,'21:00');
 INSERT INTO "event_duty" VALUES(82,2,6,4,2,'20:00');
-INSERT INTO "event_duty" VALUES(84,6,6,4,2,'20:00');
+INSERT INTO "event_duty" VALUES(84,6,6,4,2,'17:00');
 INSERT INTO "event_duty" VALUES(85,11,6,4,2,'20:00');
 INSERT INTO "event_duty" VALUES(86,15,6,4,2,'20:00');
 INSERT INTO "event_duty" VALUES(87,19,6,4,2,'20:00');
 INSERT INTO "event_duty" VALUES(88,2,7,3,1,'20:00');
-INSERT INTO "event_duty" VALUES(90,6,7,3,1,'20:00');
+INSERT INTO "event_duty" VALUES(90,6,7,3,1,'17:00');
 INSERT INTO "event_duty" VALUES(91,11,7,3,1,'20:00');
 INSERT INTO "event_duty" VALUES(92,15,7,3,1,'20:00');
 INSERT INTO "event_duty" VALUES(93,19,7,3,1,'20:00');
 INSERT INTO "event_duty" VALUES(94,2,9,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(96,6,9,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(96,6,9,6,1,'17:00');
 INSERT INTO "event_duty" VALUES(97,11,9,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(98,15,9,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(99,19,9,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(100,2,10,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(102,6,10,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(102,6,10,6,1,'17:00');
 INSERT INTO "event_duty" VALUES(103,11,10,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(104,15,10,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(105,19,10,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(106,2,11,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(108,6,11,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(108,6,11,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(109,11,11,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(110,15,11,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(111,19,11,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(112,2,12,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(114,6,12,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(114,6,12,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(115,11,12,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(116,15,12,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(117,19,12,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(118,2,13,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(120,6,13,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(120,6,13,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(121,11,13,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(122,15,13,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(123,19,13,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(124,2,14,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(126,6,14,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(126,6,14,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(127,11,14,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(128,15,14,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(129,19,14,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(130,2,15,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(132,6,15,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(132,6,15,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(133,11,15,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(134,15,15,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(135,19,15,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(136,2,16,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(138,6,16,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(138,6,16,6,1,'17:00');
 INSERT INTO "event_duty" VALUES(139,11,16,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(140,15,16,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(141,19,16,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(142,2,17,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(144,6,17,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(144,6,17,6,1,'17:00');
 INSERT INTO "event_duty" VALUES(145,11,17,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(146,15,17,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(147,19,17,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(148,2,19,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(150,6,19,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(150,6,19,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(151,11,19,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(152,15,19,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(153,19,19,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(154,2,21,4,1,'20:00');
-INSERT INTO "event_duty" VALUES(156,6,21,4,1,'20:00');
+INSERT INTO "event_duty" VALUES(156,6,21,4,1,'17:00');
 INSERT INTO "event_duty" VALUES(157,11,21,4,1,'20:00');
 INSERT INTO "event_duty" VALUES(158,15,21,4,1,'20:00');
 INSERT INTO "event_duty" VALUES(159,19,21,4,1,'20:00');
@@ -555,121 +462,121 @@ INSERT INTO "event_duty" VALUES(223,11,37,6,1,'23:30');
 INSERT INTO "event_duty" VALUES(224,15,37,6,1,'23:30');
 INSERT INTO "event_duty" VALUES(225,19,37,6,1,'23:30');
 INSERT INTO "event_duty" VALUES(226,2,42,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(228,6,42,8,1,'17:00');
+INSERT INTO "event_duty" VALUES(228,6,42,8,1,'14:00');
 INSERT INTO "event_duty" VALUES(229,11,42,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(230,15,42,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(231,19,42,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(232,2,43,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(234,6,43,8,1,'17:00');
+INSERT INTO "event_duty" VALUES(234,6,43,8,1,'14:00');
 INSERT INTO "event_duty" VALUES(235,11,43,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(236,15,43,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(237,19,43,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(238,2,44,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(240,6,44,8,1,'17:00');
+INSERT INTO "event_duty" VALUES(240,6,44,8,1,'14:00');
 INSERT INTO "event_duty" VALUES(241,11,44,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(242,15,44,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(243,19,44,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(244,2,47,5,1,'17:00');
-INSERT INTO "event_duty" VALUES(246,6,47,5,1,'17:00');
+INSERT INTO "event_duty" VALUES(246,6,47,5,1,'14:00');
 INSERT INTO "event_duty" VALUES(247,11,47,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(248,15,47,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(249,19,47,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(250,2,53,10,2,'21:00');
-INSERT INTO "event_duty" VALUES(252,6,53,10,2,'21:00');
+INSERT INTO "event_duty" VALUES(252,6,53,10,2,'18:00');
 INSERT INTO "event_duty" VALUES(253,11,53,10,2,'21:00');
 INSERT INTO "event_duty" VALUES(254,15,53,10,2,'21:00');
 INSERT INTO "event_duty" VALUES(255,19,53,10,2,'21:00');
 INSERT INTO "event_duty" VALUES(256,1,6,4,2,'20:00');
 INSERT INTO "event_duty" VALUES(257,7,6,4,2,'20:00');
 INSERT INTO "event_duty" VALUES(258,8,6,4,2,'20:00');
-INSERT INTO "event_duty" VALUES(259,9,6,4,2,'20:00');
-INSERT INTO "event_duty" VALUES(260,10,6,4,2,'20:00');
+INSERT INTO "event_duty" VALUES(259,9,6,4,2,'19:00');
+INSERT INTO "event_duty" VALUES(260,10,6,4,2,'19:00');
 INSERT INTO "event_duty" VALUES(261,13,6,4,2,'20:00');
-INSERT INTO "event_duty" VALUES(262,14,6,4,2,'20:00');
+INSERT INTO "event_duty" VALUES(262,14,6,4,2,'19:00');
 INSERT INTO "event_duty" VALUES(263,1,7,3,1,'20:00');
 INSERT INTO "event_duty" VALUES(264,7,7,3,1,'20:00');
 INSERT INTO "event_duty" VALUES(265,8,7,3,1,'20:00');
-INSERT INTO "event_duty" VALUES(266,9,7,3,1,'20:00');
-INSERT INTO "event_duty" VALUES(267,10,7,3,1,'20:00');
+INSERT INTO "event_duty" VALUES(266,9,7,3,1,'19:00');
+INSERT INTO "event_duty" VALUES(267,10,7,3,1,'19:00');
 INSERT INTO "event_duty" VALUES(268,13,7,3,1,'20:00');
-INSERT INTO "event_duty" VALUES(269,14,7,3,1,'20:00');
+INSERT INTO "event_duty" VALUES(269,14,7,3,1,'19:00');
 INSERT INTO "event_duty" VALUES(270,1,9,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(271,7,9,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(272,8,9,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(273,9,9,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(274,10,9,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(273,9,9,6,1,'19:00');
+INSERT INTO "event_duty" VALUES(274,10,9,6,1,'19:00');
 INSERT INTO "event_duty" VALUES(275,13,9,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(276,14,9,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(276,14,9,6,1,'19:00');
 INSERT INTO "event_duty" VALUES(277,1,10,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(278,7,10,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(279,8,10,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(280,9,10,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(281,10,10,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(280,9,10,6,1,'19:00');
+INSERT INTO "event_duty" VALUES(281,10,10,6,1,'19:00');
 INSERT INTO "event_duty" VALUES(282,13,10,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(283,14,10,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(283,14,10,6,1,'19:00');
 INSERT INTO "event_duty" VALUES(284,1,11,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(285,7,11,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(286,8,11,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(287,9,11,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(288,10,11,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(287,9,11,5,1,'19:00');
+INSERT INTO "event_duty" VALUES(288,10,11,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(289,13,11,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(290,14,11,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(290,14,11,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(291,1,12,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(292,7,12,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(293,8,12,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(294,9,12,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(295,10,12,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(294,9,12,5,1,'19:00');
+INSERT INTO "event_duty" VALUES(295,10,12,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(296,13,12,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(297,14,12,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(297,14,12,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(298,1,13,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(299,7,13,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(300,8,13,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(301,9,13,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(302,10,13,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(301,9,13,5,1,'19:00');
+INSERT INTO "event_duty" VALUES(302,10,13,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(303,13,13,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(304,14,13,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(304,14,13,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(305,1,14,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(306,7,14,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(307,8,14,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(308,9,14,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(309,10,14,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(308,9,14,5,1,'19:00');
+INSERT INTO "event_duty" VALUES(309,10,14,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(310,13,14,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(311,14,14,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(311,14,14,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(312,1,15,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(313,7,15,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(314,8,15,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(315,9,15,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(316,10,15,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(315,9,15,5,1,'19:00');
+INSERT INTO "event_duty" VALUES(316,10,15,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(317,13,15,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(318,14,15,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(318,14,15,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(319,1,16,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(320,7,16,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(321,8,16,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(322,9,16,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(323,10,16,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(322,9,16,6,1,'19:00');
+INSERT INTO "event_duty" VALUES(323,10,16,6,1,'19:00');
 INSERT INTO "event_duty" VALUES(324,13,16,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(325,14,16,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(325,14,16,6,1,'19:00');
 INSERT INTO "event_duty" VALUES(326,1,17,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(327,7,17,6,1,'20:00');
 INSERT INTO "event_duty" VALUES(328,8,17,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(329,9,17,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(330,10,17,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(329,9,17,6,1,'19:00');
+INSERT INTO "event_duty" VALUES(330,10,17,6,1,'19:00');
 INSERT INTO "event_duty" VALUES(331,13,17,6,1,'20:00');
-INSERT INTO "event_duty" VALUES(332,14,17,6,1,'20:00');
+INSERT INTO "event_duty" VALUES(332,14,17,6,1,'19:00');
 INSERT INTO "event_duty" VALUES(333,1,19,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(334,7,19,5,1,'20:00');
 INSERT INTO "event_duty" VALUES(335,8,19,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(336,9,19,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(337,10,19,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(336,9,19,5,1,'19:00');
+INSERT INTO "event_duty" VALUES(337,10,19,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(338,13,19,5,1,'20:00');
-INSERT INTO "event_duty" VALUES(339,14,19,5,1,'20:00');
+INSERT INTO "event_duty" VALUES(339,14,19,5,1,'19:00');
 INSERT INTO "event_duty" VALUES(340,1,21,4,1,'20:00');
 INSERT INTO "event_duty" VALUES(341,7,21,4,1,'20:00');
 INSERT INTO "event_duty" VALUES(342,8,21,4,1,'20:00');
-INSERT INTO "event_duty" VALUES(343,9,21,4,1,'20:00');
-INSERT INTO "event_duty" VALUES(344,10,21,4,1,'20:00');
+INSERT INTO "event_duty" VALUES(343,9,21,4,1,'19:00');
+INSERT INTO "event_duty" VALUES(344,10,21,4,1,'19:00');
 INSERT INTO "event_duty" VALUES(345,13,21,4,1,'20:00');
-INSERT INTO "event_duty" VALUES(346,14,21,4,1,'20:00');
+INSERT INTO "event_duty" VALUES(346,14,21,4,1,'19:00');
 INSERT INTO "event_duty" VALUES(354,1,27,4,2,'23:30');
 INSERT INTO "event_duty" VALUES(355,7,27,4,2,'23:30');
 INSERT INTO "event_duty" VALUES(356,8,27,4,2,'23:30');
@@ -743,52 +650,52 @@ INSERT INTO "event_duty" VALUES(423,14,37,6,1,'23:30');
 INSERT INTO "event_duty" VALUES(424,1,42,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(425,7,42,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(426,8,42,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(427,9,42,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(428,10,42,8,1,'17:00');
+INSERT INTO "event_duty" VALUES(427,9,42,8,1,'16:00');
+INSERT INTO "event_duty" VALUES(428,10,42,8,1,'16:00');
 INSERT INTO "event_duty" VALUES(429,13,42,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(430,14,42,8,1,'17:00');
+INSERT INTO "event_duty" VALUES(430,14,42,8,1,'16:00');
 INSERT INTO "event_duty" VALUES(431,1,43,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(432,7,43,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(433,8,43,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(434,9,43,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(435,10,43,8,1,'17:00');
+INSERT INTO "event_duty" VALUES(434,9,43,8,1,'16:00');
+INSERT INTO "event_duty" VALUES(435,10,43,8,1,'16:00');
 INSERT INTO "event_duty" VALUES(436,13,43,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(437,14,43,8,1,'17:00');
+INSERT INTO "event_duty" VALUES(437,14,43,8,1,'16:00');
 INSERT INTO "event_duty" VALUES(438,1,44,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(439,7,44,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(440,8,44,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(441,9,44,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(442,10,44,8,1,'17:00');
+INSERT INTO "event_duty" VALUES(441,9,44,8,1,'16:00');
+INSERT INTO "event_duty" VALUES(442,10,44,8,1,'16:00');
 INSERT INTO "event_duty" VALUES(443,13,44,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(444,14,44,8,1,'17:00');
+INSERT INTO "event_duty" VALUES(444,14,44,8,1,'16:00');
 INSERT INTO "event_duty" VALUES(445,1,45,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(446,7,45,8,1,'17:00');
 INSERT INTO "event_duty" VALUES(447,8,45,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(448,9,45,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(449,10,45,8,1,'17:00');
+INSERT INTO "event_duty" VALUES(448,9,45,8,1,'16:00');
+INSERT INTO "event_duty" VALUES(449,10,45,8,1,'16:00');
 INSERT INTO "event_duty" VALUES(450,13,45,8,1,'17:00');
-INSERT INTO "event_duty" VALUES(451,14,45,8,1,'17:00');
+INSERT INTO "event_duty" VALUES(451,14,45,8,1,'16:00');
 INSERT INTO "event_duty" VALUES(452,1,47,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(453,7,47,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(454,8,47,5,1,'17:00');
-INSERT INTO "event_duty" VALUES(455,9,47,5,1,'17:00');
-INSERT INTO "event_duty" VALUES(456,10,47,5,1,'17:00');
+INSERT INTO "event_duty" VALUES(455,9,47,5,1,'16:00');
+INSERT INTO "event_duty" VALUES(456,10,47,5,1,'16:00');
 INSERT INTO "event_duty" VALUES(457,13,47,5,1,'17:00');
-INSERT INTO "event_duty" VALUES(458,14,47,5,1,'17:00');
+INSERT INTO "event_duty" VALUES(458,14,47,5,1,'16:00');
 INSERT INTO "event_duty" VALUES(459,1,48,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(460,7,48,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(461,8,48,5,1,'17:00');
-INSERT INTO "event_duty" VALUES(462,9,48,5,1,'17:00');
-INSERT INTO "event_duty" VALUES(463,10,48,5,1,'17:00');
+INSERT INTO "event_duty" VALUES(462,9,48,5,1,'16:00');
+INSERT INTO "event_duty" VALUES(463,10,48,5,1,'16:00');
 INSERT INTO "event_duty" VALUES(464,13,48,5,1,'17:00');
-INSERT INTO "event_duty" VALUES(465,14,48,5,1,'17:00');
+INSERT INTO "event_duty" VALUES(465,14,48,5,1,'16:00');
 INSERT INTO "event_duty" VALUES(466,1,53,10,2,'21:00');
 INSERT INTO "event_duty" VALUES(467,7,53,10,2,'21:00');
 INSERT INTO "event_duty" VALUES(468,8,53,10,2,'21:00');
-INSERT INTO "event_duty" VALUES(469,9,53,10,2,'21:00');
-INSERT INTO "event_duty" VALUES(470,10,53,10,2,'21:00');
+INSERT INTO "event_duty" VALUES(469,9,53,10,2,'20:00');
+INSERT INTO "event_duty" VALUES(470,10,53,10,2,'20:00');
 INSERT INTO "event_duty" VALUES(471,13,53,10,2,'21:00');
-INSERT INTO "event_duty" VALUES(472,14,53,10,2,'21:00');
+INSERT INTO "event_duty" VALUES(472,14,53,10,2,'20:00');
 INSERT INTO "event_duty" VALUES(473,16,6,4,2,'20:00');
 INSERT INTO "event_duty" VALUES(474,16,7,3,1,'20:00');
 INSERT INTO "event_duty" VALUES(475,16,9,6,1,'20:00');
@@ -820,53 +727,53 @@ INSERT INTO "event_duty" VALUES(501,16,47,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(502,16,48,5,1,'17:00');
 INSERT INTO "event_duty" VALUES(503,16,53,10,2,'21:00');
 INSERT INTO "event_duty" VALUES(535,2,52,8,1,'21:00');
-INSERT INTO "event_duty" VALUES(537,6,52,8,1,'21:00');
+INSERT INTO "event_duty" VALUES(537,6,52,8,1,'18:00');
 INSERT INTO "event_duty" VALUES(538,11,52,8,1,'21:00');
 INSERT INTO "event_duty" VALUES(539,15,52,8,1,'21:00');
 INSERT INTO "event_duty" VALUES(540,19,52,8,1,'21:00');
 INSERT INTO "event_duty" VALUES(541,2,52,8,1,'22:00');
-INSERT INTO "event_duty" VALUES(543,6,52,8,1,'22:00');
+INSERT INTO "event_duty" VALUES(543,6,52,8,1,'19:00');
 INSERT INTO "event_duty" VALUES(544,11,52,8,1,'22:00');
 INSERT INTO "event_duty" VALUES(545,15,52,8,1,'22:00');
 INSERT INTO "event_duty" VALUES(546,19,52,8,1,'22:00');
 INSERT INTO "event_duty" VALUES(547,2,52,8,1,'23:00');
-INSERT INTO "event_duty" VALUES(549,6,52,8,1,'23:00');
+INSERT INTO "event_duty" VALUES(549,6,52,8,1,'20:00');
 INSERT INTO "event_duty" VALUES(550,11,52,8,1,'23:00');
 INSERT INTO "event_duty" VALUES(551,15,52,8,1,'23:00');
 INSERT INTO "event_duty" VALUES(552,19,52,8,1,'23:00');
 INSERT INTO "event_duty" VALUES(553,2,52,8,1,'00:00');
-INSERT INTO "event_duty" VALUES(555,6,52,8,1,'00:00');
+INSERT INTO "event_duty" VALUES(555,6,52,8,1,'21:00');
 INSERT INTO "event_duty" VALUES(556,11,52,8,1,'00:00');
 INSERT INTO "event_duty" VALUES(557,15,52,8,1,'00:00');
 INSERT INTO "event_duty" VALUES(558,19,52,8,1,'00:00');
 INSERT INTO "event_duty" VALUES(559,1,52,8,1,'21:00');
 INSERT INTO "event_duty" VALUES(560,7,52,8,1,'21:00');
 INSERT INTO "event_duty" VALUES(561,8,52,8,1,'21:00');
-INSERT INTO "event_duty" VALUES(562,9,52,8,1,'21:00');
-INSERT INTO "event_duty" VALUES(563,10,52,8,1,'21:00');
+INSERT INTO "event_duty" VALUES(562,9,52,8,1,'20:00');
+INSERT INTO "event_duty" VALUES(563,10,52,8,1,'20:00');
 INSERT INTO "event_duty" VALUES(564,13,52,8,1,'21:00');
-INSERT INTO "event_duty" VALUES(565,14,52,8,1,'21:00');
+INSERT INTO "event_duty" VALUES(565,14,52,8,1,'20:00');
 INSERT INTO "event_duty" VALUES(566,1,52,8,1,'22:00');
 INSERT INTO "event_duty" VALUES(567,7,52,8,1,'22:00');
 INSERT INTO "event_duty" VALUES(568,8,52,8,1,'22:00');
-INSERT INTO "event_duty" VALUES(569,9,52,8,1,'22:00');
-INSERT INTO "event_duty" VALUES(570,10,52,8,1,'22:00');
+INSERT INTO "event_duty" VALUES(569,9,52,8,1,'21:00');
+INSERT INTO "event_duty" VALUES(570,10,52,8,1,'21:00');
 INSERT INTO "event_duty" VALUES(571,13,52,8,1,'22:00');
-INSERT INTO "event_duty" VALUES(572,14,52,8,1,'22:00');
+INSERT INTO "event_duty" VALUES(572,14,52,8,1,'21:00');
 INSERT INTO "event_duty" VALUES(573,1,52,8,1,'23:00');
 INSERT INTO "event_duty" VALUES(574,7,52,8,1,'23:00');
 INSERT INTO "event_duty" VALUES(575,8,52,8,1,'23:00');
-INSERT INTO "event_duty" VALUES(576,9,52,8,1,'23:00');
-INSERT INTO "event_duty" VALUES(577,10,52,8,1,'23:00');
+INSERT INTO "event_duty" VALUES(576,9,52,8,1,'22:00');
+INSERT INTO "event_duty" VALUES(577,10,52,8,1,'22:00');
 INSERT INTO "event_duty" VALUES(578,13,52,8,1,'23:00');
-INSERT INTO "event_duty" VALUES(579,14,52,8,1,'23:00');
+INSERT INTO "event_duty" VALUES(579,14,52,8,1,'22:00');
 INSERT INTO "event_duty" VALUES(580,1,52,8,1,'00:00');
 INSERT INTO "event_duty" VALUES(581,7,52,8,1,'00:00');
 INSERT INTO "event_duty" VALUES(582,8,52,8,1,'00:00');
-INSERT INTO "event_duty" VALUES(583,9,52,8,1,'00:00');
-INSERT INTO "event_duty" VALUES(584,10,52,8,1,'00:00');
+INSERT INTO "event_duty" VALUES(583,9,52,8,1,'23:00');
+INSERT INTO "event_duty" VALUES(584,10,52,8,1,'23:00');
 INSERT INTO "event_duty" VALUES(585,13,52,8,1,'00:00');
-INSERT INTO "event_duty" VALUES(586,14,52,8,1,'00:00');
+INSERT INTO "event_duty" VALUES(586,14,52,8,1,'23:00');
 INSERT INTO "event_duty" VALUES(587,16,52,8,1,'21:00');
 INSERT INTO "event_duty" VALUES(588,16,52,8,1,'22:00');
 INSERT INTO "event_duty" VALUES(589,16,52,8,1,'23:00');
@@ -898,27 +805,15 @@ INSERT INTO "event_duty" VALUES(655,5,52,8,1,'21:00');
 INSERT INTO "event_duty" VALUES(656,5,52,8,1,'22:00');
 INSERT INTO "event_duty" VALUES(657,5,52,8,1,'23:00');
 INSERT INTO "event_duty" VALUES(658,5,53,10,2,'21:00');
-CREATE TABLE event_duty_assignment (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    event_duty_id INTEGER NOT NULL,
-    brother_id INTEGER NOT NULL,
 
-    status_id INTEGER NOT NULL DEFAULT 1,
-
-    FOREIGN KEY (event_duty_id) REFERENCES event_duty(id),
-    FOREIGN KEY (brother_id) REFERENCES brother(id),
-    FOREIGN KEY (status_id) REFERENCES event_duty_assignment_status(id)
-);
-CREATE TABLE event_duty_assignment_status (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE
-);
+-- event_duty_assignment_status
 INSERT INTO "event_duty_assignment_status" VALUES(1,'signed_up');
 INSERT INTO "event_duty_assignment_status" VALUES(2,'assigned');
 INSERT INTO "event_duty_assignment_status" VALUES(3,'completed');
 INSERT INTO "event_duty_assignment_status" VALUES(4,'late');
 INSERT INTO "event_duty_assignment_status" VALUES(5,'rejected');
-DELETE FROM sqlite_sequence;
+
+-- sqlite_sequence
 INSERT INTO "sqlite_sequence" VALUES('event_duty_assignment_status',5);
 INSERT INTO "sqlite_sequence" VALUES('role',4);
 INSERT INTO "sqlite_sequence" VALUES('duty_type',4);
@@ -928,6 +823,3 @@ INSERT INTO "sqlite_sequence" VALUES('duty_definition',57);
 INSERT INTO "sqlite_sequence" VALUES('event_definition_duty',274);
 INSERT INTO "sqlite_sequence" VALUES('event',20);
 INSERT INTO "sqlite_sequence" VALUES('event_duty',658);
-CREATE INDEX idx_point_adjustment_brother_id ON point_adjustment (brother_id);
-CREATE INDEX idx_point_adjustment_event_id ON point_adjustment (event_id);
-CREATE INDEX idx_point_adjustment_created_at ON point_adjustment (created_at);
