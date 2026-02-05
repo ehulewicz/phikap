@@ -1,5 +1,6 @@
-rm -rf ./.wrangler/state/v3/d1 &&
-wrangler d1 execute phikap-db --local --file=./schema.sql &&
-wrangler d1 execute phikap-db --local --file=./seed.sql &&
-npm run dev -- --local &
-cd ../frontend && npm run dev
+#!/usr/bin/env bash
+set -euo pipefail
+
+rm -rf ./.wrangler/state/v3/d1 && wrangler d1 execute phikap-db --file=./schema.sql && wrangler d1 execute phikap-db --file=./seed.sql
+
+./start.sh

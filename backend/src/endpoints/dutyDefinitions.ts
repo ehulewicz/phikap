@@ -212,3 +212,59 @@ export class DutyDefinitionUpdate extends OpenAPIRoute {
 		};
 	}
 }
+
+export class DutyDefinitionDelete extends OpenAPIRoute {
+	schema = {
+		tags: ["Duty Definitions"],
+		summary: "Delete duty definition",
+		request: {
+			params: z.object({
+				duty_definition_id: Num({ description: "Duty definition id" }),
+			}),
+		},
+		responses: {
+			"200": {
+				description: "Deleted duty definition",
+				content: {
+					"application/json": {
+						schema: z.object({
+							success: Bool(),
+						}),
+					},
+				},
+			},
+		},
+	};
+
+	async handle(c: AppContext) {
+		const data = await this.getValidatedData<typeof this.schema>();
+		const { duty_definition_id } = data.params;
+
+		await c.env.phikap_db
+			.prepare(
+				`DELETE FROM event_duty_assignment
+				 WHERE event_duty_id IN (
+					SELECT id FROM event_duty WHERE duty_definition_id = ?
+				 )`
+			)
+			.bind(duty_definition_id)
+			.run();
+
+		await c.env.phikap_db
+			.prepare("DELETE FROM event_duty WHERE duty_definition_id = ?")
+			.bind(duty_definition_id)
+			.run();
+
+		await c.env.phikap_db
+			.prepare("DELETE FROM event_definition_duty WHERE duty_definition_id = ?")
+			.bind(duty_definition_id)
+			.run();
+
+		await c.env.phikap_db
+			.prepare("DELETE FROM duty_definition WHERE id = ?")
+			.bind(duty_definition_id)
+			.run();
+
+		return { success: true };
+	}
+}

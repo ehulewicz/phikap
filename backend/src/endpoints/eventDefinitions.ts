@@ -15,6 +15,7 @@ const EventDefinitionDuty = z.object({
 	duty_definition_id: z.number(),
 	default_points: z.number(),
 	default_required_brothers: z.number(),
+	default_time: z.string().nullable().optional(),
 });
 
 export class EventDefinitionList extends OpenAPIRoute {
@@ -96,6 +97,7 @@ export class EventDefinitionCreate extends OpenAPIRoute {
 										duty_definition_id: z.number(),
 										default_points: z.number(),
 										default_required_brothers: z.number(),
+										default_time: z.string().nullable().optional(),
 									})
 								)
 								.optional(),
@@ -135,15 +137,16 @@ export class EventDefinitionCreate extends OpenAPIRoute {
 		if (duties && duties.length > 0) {
 			const stmt = c.env.phikap_db.prepare(
 				`INSERT INTO event_definition_duty
-				 (event_definition_id, duty_definition_id, default_points, default_required_brothers)
-				 VALUES (?, ?, ?, ?)`
+				 (event_definition_id, duty_definition_id, default_points, default_required_brothers, default_time)
+				 VALUES (?, ?, ?, ?, ?)`
 			);
 			const batch = duties.map((duty) =>
 				stmt.bind(
 					eventDefinitionId,
 					duty.duty_definition_id,
 					duty.default_points,
-					duty.default_required_brothers
+					duty.default_required_brothers,
+					duty.default_time ?? null
 				)
 			);
 			await c.env.phikap_db.batch(batch);
@@ -267,7 +270,7 @@ export class EventDefinitionDutiesList extends OpenAPIRoute {
 
 		const result = await c.env.phikap_db
 			.prepare(
-				`SELECT id, event_definition_id, duty_definition_id, default_points, default_required_brothers
+				`SELECT id, event_definition_id, duty_definition_id, default_points, default_required_brothers, default_time
 				 FROM event_definition_duty
 				 WHERE event_definition_id = ?
 				 ORDER BY id
@@ -307,6 +310,7 @@ export class EventDefinitionDutyCreate extends OpenAPIRoute {
 							duty_definition_id: z.number(),
 							default_points: z.number(),
 							default_required_brothers: z.number(),
+							default_time: z.string().nullable().optional(),
 						}),
 					},
 				},
@@ -330,27 +334,28 @@ export class EventDefinitionDutyCreate extends OpenAPIRoute {
 	async handle(c: AppContext) {
 		const data = await this.getValidatedData<typeof this.schema>();
 		const { event_definition_id } = data.params;
-		const { duty_definition_id, default_points, default_required_brothers } =
+		const { duty_definition_id, default_points, default_required_brothers, default_time } =
 			data.body;
 
 		const insert = await c.env.phikap_db
 			.prepare(
 				`INSERT INTO event_definition_duty
-				 (event_definition_id, duty_definition_id, default_points, default_required_brothers)
-				 VALUES (?, ?, ?, ?)`
+				 (event_definition_id, duty_definition_id, default_points, default_required_brothers, default_time)
+				 VALUES (?, ?, ?, ?, ?)`
 			)
 			.bind(
 				event_definition_id,
 				duty_definition_id,
 				default_points,
-				default_required_brothers
+				default_required_brothers,
+				default_time ?? null
 			)
 			.run();
 
 		const id = Number(insert.meta.last_row_id);
 		const created = await c.env.phikap_db
 			.prepare(
-				`SELECT id, event_definition_id, duty_definition_id, default_points, default_required_brothers
+				`SELECT id, event_definition_id, duty_definition_id, default_points, default_required_brothers, default_time
 				 FROM event_definition_duty
 				 WHERE id = ?`
 			)
@@ -379,6 +384,7 @@ export class EventDefinitionDutyUpdate extends OpenAPIRoute {
 						schema: z.object({
 							default_points: z.number(),
 							default_required_brothers: z.number(),
+							default_time: z.string().nullable().optional(),
 						}),
 					},
 				},
@@ -402,17 +408,18 @@ export class EventDefinitionDutyUpdate extends OpenAPIRoute {
 	async handle(c: AppContext) {
 		const data = await this.getValidatedData<typeof this.schema>();
 		const { event_definition_id, event_definition_duty_id } = data.params;
-		const { default_points, default_required_brothers } = data.body;
+		const { default_points, default_required_brothers, default_time } = data.body;
 
 		await c.env.phikap_db
 			.prepare(
 				`UPDATE event_definition_duty
-				 SET default_points = ?, default_required_brothers = ?
+				 SET default_points = ?, default_required_brothers = ?, default_time = ?
 				 WHERE id = ? AND event_definition_id = ?`
 			)
 			.bind(
 				default_points,
 				default_required_brothers,
+				default_time ?? null,
 				event_definition_duty_id,
 				event_definition_id
 			)
@@ -420,7 +427,7 @@ export class EventDefinitionDutyUpdate extends OpenAPIRoute {
 
 		const updated = await c.env.phikap_db
 			.prepare(
-				`SELECT id, event_definition_id, duty_definition_id, default_points, default_required_brothers
+				`SELECT id, event_definition_id, duty_definition_id, default_points, default_required_brothers, default_time
 				 FROM event_definition_duty
 				 WHERE id = ?`
 			)
@@ -473,5 +480,84 @@ export class EventDefinitionDutyDelete extends OpenAPIRoute {
 		return {
 			success: true,
 		};
+	}
+}
+
+export class EventDefinitionDelete extends OpenAPIRoute {
+	schema = {
+		tags: ["Event Definitions"],
+		summary: "Delete event definition",
+		request: {
+			params: z.object({
+				event_definition_id: Num({ description: "Event definition id" }),
+			}),
+		},
+		responses: {
+			"200": {
+				description: "Deleted event definition",
+				content: {
+					"application/json": {
+						schema: z.object({
+							success: Bool(),
+						}),
+					},
+				},
+			},
+		},
+	};
+
+	async handle(c: AppContext) {
+		const data = await this.getValidatedData<typeof this.schema>();
+		const { event_definition_id } = data.params;
+
+		await c.env.phikap_db
+			.prepare(
+				`DELETE FROM event_duty_assignment
+				 WHERE event_duty_id IN (
+					SELECT ed.id
+					FROM event_duty ed
+					JOIN event e ON e.id = ed.event_id
+					WHERE e.event_definition_id = ?
+				 )`
+			)
+			.bind(event_definition_id)
+			.run();
+
+		await c.env.phikap_db
+			.prepare(
+				`DELETE FROM event_duty
+				 WHERE event_id IN (
+					SELECT id FROM event WHERE event_definition_id = ?
+				 )`
+			)
+			.bind(event_definition_id)
+			.run();
+
+		await c.env.phikap_db
+			.prepare(
+				`DELETE FROM point_adjustment
+				 WHERE event_id IN (
+					SELECT id FROM event WHERE event_definition_id = ?
+				 )`
+			)
+			.bind(event_definition_id)
+			.run();
+
+		await c.env.phikap_db
+			.prepare("DELETE FROM event WHERE event_definition_id = ?")
+			.bind(event_definition_id)
+			.run();
+
+		await c.env.phikap_db
+			.prepare("DELETE FROM event_definition_duty WHERE event_definition_id = ?")
+			.bind(event_definition_id)
+			.run();
+
+		await c.env.phikap_db
+			.prepare("DELETE FROM event_definition WHERE id = ?")
+			.bind(event_definition_id)
+			.run();
+
+		return { success: true };
 	}
 }

@@ -241,7 +241,7 @@ export class EventCreate extends OpenAPIRoute {
 		if (include_default_duties) {
 			const defaults = await c.env.phikap_db
 				.prepare(
-					`SELECT duty_definition_id, default_points, default_required_brothers
+					`SELECT duty_definition_id, default_points, default_required_brothers, default_time
 					 FROM event_definition_duty
 					 WHERE event_definition_id = ?`
 				)
@@ -258,7 +258,8 @@ export class EventCreate extends OpenAPIRoute {
 					const override = overridesMap.get(row.duty_definition_id);
 					const points = override?.points ?? row.default_points;
 					const required = override?.required_brothers ?? row.default_required_brothers;
-					const time = override?.time ?? start_time;
+					const time =
+						override?.time ?? (row.default_time as string | null) ?? start_time;
 					return stmt.bind(eventId, row.duty_definition_id, points, required, time);
 				});
 				await c.env.phikap_db.batch(batch);
@@ -344,6 +345,16 @@ export class EventUpdate extends OpenAPIRoute {
 		const { event_id } = data.params;
 		const { name, event_definition_id, date, start_time, end_time } = data.body;
 
+		const current = await c.env.phikap_db
+			.prepare(
+				`SELECT event_definition_id
+				 FROM event
+				 WHERE id = ?`
+			)
+			.bind(event_id)
+			.first();
+		const previousDefinitionId = Number(current?.event_definition_id ?? 0);
+
 		await c.env.phikap_db
 			.prepare(
 				`UPDATE event
@@ -352,6 +363,50 @@ export class EventUpdate extends OpenAPIRoute {
 			)
 			.bind(name, event_definition_id, date, start_time, end_time, event_id)
 			.run();
+
+		if (current && previousDefinitionId !== event_definition_id) {
+			await c.env.phikap_db
+				.prepare(
+					`DELETE FROM event_duty_assignment
+					 WHERE event_duty_id IN (
+						SELECT id FROM event_duty WHERE event_id = ?
+					 )`
+				)
+				.bind(event_id)
+				.run();
+
+			await c.env.phikap_db
+				.prepare("DELETE FROM event_duty WHERE event_id = ?")
+				.bind(event_id)
+				.run();
+
+			const defaults = await c.env.phikap_db
+				.prepare(
+					`SELECT duty_definition_id, default_points, default_required_brothers, default_time
+					 FROM event_definition_duty
+					 WHERE event_definition_id = ?`
+				)
+				.bind(event_definition_id)
+				.all();
+
+			if (defaults.results && defaults.results.length > 0) {
+				const stmt = c.env.phikap_db.prepare(
+					`INSERT INTO event_duty
+					 (event_id, duty_definition_id, points, required_brothers, time)
+					 VALUES (?, ?, ?, ?, ?)`
+				);
+				const batch = defaults.results.map((row) =>
+					stmt.bind(
+						event_id,
+						row.duty_definition_id,
+						row.default_points,
+						row.default_required_brothers,
+						(row.default_time as string | null) ?? start_time
+					)
+				);
+				await c.env.phikap_db.batch(batch);
+			}
+		}
 
 		const updated = await c.env.phikap_db
 			.prepare(

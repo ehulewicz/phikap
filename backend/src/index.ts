@@ -12,6 +12,7 @@ import { AdminAssignWeek, AdminUnlockWeek } from "./endpoints/adminAssignments";
 import { BrotherList, BrotherPointsCreate } from "./endpoints/brothers";
 import {
 	DutyDefinitionCreate,
+	DutyDefinitionDelete,
 	DutyDefinitionList,
 	DutyDefinitionUpdate,
 } from "./endpoints/dutyDefinitions";
@@ -23,6 +24,7 @@ import {
 	EventDefinitionDutyDelete,
 	EventDefinitionDutyUpdate,
 	EventDefinitionDutiesList,
+	EventDefinitionDelete,
 	EventDefinitionList,
 	EventDefinitionUpdate,
 } from "./endpoints/eventDefinitions";
@@ -45,8 +47,8 @@ app.use(
 	"*",
 	cors({
 		origin: [
+			"http://localhost:5173",
 			"https://rush.phikap.pages.dev",
-			"https://9003791e.phikap.pages.dev",
 		],
 		credentials: true,
 	})
@@ -97,11 +99,13 @@ openapi.put("/dutyTypes/:duty_type_id", DutyTypeUpdate);
 openapi.get("/dutyDefinitions", DutyDefinitionList);
 openapi.post("/dutyDefinitions", DutyDefinitionCreate);
 openapi.put("/dutyDefinitions/:duty_definition_id", DutyDefinitionUpdate);
+openapi.delete("/dutyDefinitions/:duty_definition_id", DutyDefinitionDelete);
 
 // Event Definitions
 openapi.get("/eventDefinitions", EventDefinitionList);
 openapi.post("/eventDefinitions", EventDefinitionCreate);
 openapi.put("/eventDefinitions/:event_definition_id", EventDefinitionUpdate);
+openapi.delete("/eventDefinitions/:event_definition_id", EventDefinitionDelete);
 openapi.get(
 	"/eventDefinitions/:event_definition_id/duties",
 	EventDefinitionDutiesList

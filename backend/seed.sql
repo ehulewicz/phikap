@@ -1,7 +1,7 @@
 -- =========================
 -- ASSIGNMENT STATUS LOOKUP
 -- =========================
-INSERT INTO event_duty_assignment_status (name) VALUES
+INSERT OR IGNORE INTO event_duty_assignment_status (name) VALUES
   ('signed_up'),
   ('assigned'),
   ('completed'),
@@ -195,7 +195,7 @@ INSERT INTO event_definition_duty (event_definition_id, duty_definition_id, defa
   (2, 28, 3, 2),  -- Fix couches
   (2, 38, 7, 2),  -- Take apart sound system and lights
   (2, 39, 5, 2),  -- Return subwoofer
-  (2, 52, 30, 4), -- Sober monitor
+  (2, 51, 30, 4), -- Sober monitor
   (2, 55, 10, 1), -- DJ
   (3, 8, 3, 2),   -- Rearrange couches
   (3, 18, 8, 2),  -- Set up sound system and lights
@@ -203,7 +203,7 @@ INSERT INTO event_definition_duty (event_definition_id, duty_definition_id, defa
   (3, 28, 3, 2),  -- Fix couches
   (3, 38, 7, 2),  -- Take apart sound system and lights
   (3, 39, 5, 2),  -- Return subwoofer
-  (3, 52, 30, 5), -- Sober monitor
+  (3, 51, 30, 5), -- Sober monitor
   (3, 55, 10, 1); -- DJ
 
 -- Date night specific
@@ -225,7 +225,7 @@ INSERT INTO event_definition_duty (event_definition_id, duty_definition_id, defa
   (1, 13, 5, 1), (1, 14, 5, 1), (1, 15, 5, 1), (1, 16, 6, 1), (1, 17, 6, 1), (1, 19, 5, 1),
   (1, 21, 4, 1), (1, 22, 3, 2), (1, 27, 4, 2), (1, 29, 6, 1), (1, 30, 6, 1), (1, 31, 8, 1),
   (1, 32, 8, 1), (1, 33, 5, 1), (1, 34, 5, 1), (1, 35, 5, 1), (1, 36, 6, 1), (1, 37, 6, 1),
-  (1, 42, 8, 1), (1, 43, 8, 1), (1, 44, 8, 1), (1, 45, 8, 1), (1, 47, 5, 1), (1, 48, 5, 1),
+  (1, 42, 8, 1), (1, 43, 8, 1), (1, 44, 8, 1), (1, 47, 5, 1),
   (1, 53, 10, 2),
   -- Open party (id=2)
   (2, 6, 4, 2), (2, 7, 3, 1), (2, 9, 6, 1), (2, 10, 6, 1), (2, 11, 5, 1), (2, 12, 5, 1),
@@ -263,6 +263,27 @@ INSERT INTO event_definition_duty (event_definition_id, duty_definition_id, defa
   (6, 42, 8, 1), (6, 43, 8, 1), (6, 44, 8, 1), (6, 45, 8, 1), (6, 47, 5, 1), (6, 48, 5, 1),
   (6, 53, 10, 2);
 
+-- Bartender slots for party-style events (9, 10, 11, 12 PM)
+INSERT INTO event_definition_duty (
+  event_definition_id,
+  duty_definition_id,
+  default_points,
+  default_required_brothers,
+  default_time
+) VALUES
+  (1, 52, 8, 1, '21:00'),
+  (1, 52, 8, 1, '22:00'),
+  (1, 52, 8, 1, '23:00'),
+  (1, 52, 8, 1, '00:00'),
+  (2, 52, 8, 1, '21:00'),
+  (2, 52, 8, 1, '22:00'),
+  (2, 52, 8, 1, '23:00'),
+  (2, 52, 8, 1, '00:00'),
+  (3, 52, 8, 1, '21:00'),
+  (3, 52, 8, 1, '22:00'),
+  (3, 52, 8, 1, '23:00'),
+  (3, 52, 8, 1, '00:00');
+
 -- Brotherhood (same as BPK, excluding During duties)
 INSERT INTO event_definition_duty (event_definition_id, duty_definition_id, default_points, default_required_brothers)
 SELECT brotherhood.id, ed.duty_definition_id, ed.default_points, ed.default_required_brothers
@@ -271,6 +292,27 @@ JOIN event_definition bpk ON bpk.id = ed.event_definition_id AND bpk.name = 'BPK
 JOIN duty_definition dd ON dd.id = ed.duty_definition_id
 JOIN event_definition brotherhood ON brotherhood.name = 'Brotherhood'
 WHERE dd.duty_type_id <> 4;
+
+-- Default times by duty type (only fill when not already set)
+UPDATE event_definition_duty
+SET default_time = '17:00'
+WHERE default_time IS NULL
+  AND duty_definition_id IN (SELECT id FROM duty_definition WHERE duty_type_id = 3);
+
+UPDATE event_definition_duty
+SET default_time = '20:00'
+WHERE default_time IS NULL
+  AND duty_definition_id IN (SELECT id FROM duty_definition WHERE duty_type_id = 1);
+
+UPDATE event_definition_duty
+SET default_time = '21:00'
+WHERE default_time IS NULL
+  AND duty_definition_id IN (SELECT id FROM duty_definition WHERE duty_type_id = 4);
+
+UPDATE event_definition_duty
+SET default_time = '23:30'
+WHERE default_time IS NULL
+  AND duty_definition_id IN (SELECT id FROM duty_definition WHERE duty_type_id = 2);
 
 -- =========================
 -- CALENDAR EVENTS (SPRING 2026)
@@ -282,7 +324,7 @@ VALUES
   ('Case Race', (SELECT id FROM event_definition WHERE name = 'Special'), '2026-01-31', '20:00', '22:00'),
   ('Die Day', (SELECT id FROM event_definition WHERE name = 'Special'), '2026-02-03', '20:00', '22:00'),
   ('BPK', (SELECT id FROM event_definition WHERE name = 'BPK'), '2026-02-05', '21:00', '23:30'),
-  ('Super Bowl Watch Party', (SELECT id FROM event_definition WHERE name = 'Brotherhood'), '2026-02-08', '18:00', '21:00'),
+  ('Super Bowl Watch Party', (SELECT id FROM event_definition WHERE name = 'BPK'), '2026-02-08', '18:00', '21:00'),
   ('Champagne and Shackles', (SELECT id FROM event_definition WHERE name = 'Open party'), '2026-02-12', '21:00', '23:30'),
   ('Valentines Party', (SELECT id FROM event_definition WHERE name = 'Open party'), '2026-02-13', '21:00', '23:30'),
   ('PC Mixer', (SELECT id FROM event_definition WHERE name = 'Open party'), '2026-02-19', '20:00', '22:30'),
