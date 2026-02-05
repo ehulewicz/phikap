@@ -36,6 +36,8 @@ export const paths = {
 		create: () => `${trim(apiBase)}/eventDefinitions`,
 		update: (eventDefinitionId: number) =>
 			`${trim(apiBase)}/eventDefinitions/${eventDefinitionId}`,
+		remove: (eventDefinitionId: number) =>
+			`${trim(apiBase)}/eventDefinitions/${eventDefinitionId}`,
 		duties: (eventDefinitionId: number) =>
 			`${trim(apiBase)}/eventDefinitions/${eventDefinitionId}/duties`,
 		dutyCreate: (eventDefinitionId: number) =>
@@ -49,6 +51,8 @@ export const paths = {
 		list: () => `${trim(apiBase)}/dutyDefinitions`,
 		create: () => `${trim(apiBase)}/dutyDefinitions`,
 		update: (dutyDefinitionId: number) =>
+			`${trim(apiBase)}/dutyDefinitions/${dutyDefinitionId}`,
+		remove: (dutyDefinitionId: number) =>
 			`${trim(apiBase)}/dutyDefinitions/${dutyDefinitionId}`,
 	},
 	dutyTypes: {

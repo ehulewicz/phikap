@@ -154,6 +154,17 @@ h1 {
   background: #fffaf6;
 }
 
+.event-edit {
+  margin-top: 12px;
+}
+
+.event-edit-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: end;
+}
+
 .filter-group {
   display: flex;
   gap: 12px;
@@ -297,7 +308,7 @@ h1 {
 .duty-row {
   border-radius: 14px;
   border: 1px solid rgba(24, 24, 24, 0.08);
-  padding: 14px 42px 14px 16px;
+  padding: 14px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -330,26 +341,23 @@ h1 {
   gap: 10px;
 }
 
-.duty-remove {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
+.duty-admin-remove {
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   border: 1px solid rgba(210, 62, 43, 0.35);
-  background: #fff;
-  color: rgba(210, 62, 43, 0.9);
-  font-size: 16px;
+  background: rgba(210, 62, 43, 0.08);
+  color: #a43428;
+  font-size: 18px;
   line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
+  padding: 0;
   cursor: pointer;
 }
 
-.duty-remove:disabled {
-  opacity: 0.45;
+.duty-admin-remove:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -463,6 +471,18 @@ h1 {
 .calendar-section {
   display: grid;
   gap: 12px;
+}
+
+.calendar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.calendar-section-header .admin-quick-actions {
+  margin-left: auto;
 }
 
 .calendar-section.current-week {
@@ -667,7 +687,7 @@ h1 {
 .admin-controls {
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   align-items: end;
   border-radius: 16px;
   border: 1px solid rgba(24, 24, 24, 0.08);
@@ -742,6 +762,7 @@ h1 {
 .admin-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
 }
 
 .admin-subsection {
@@ -786,7 +807,7 @@ h1 {
 .admin-row {
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(200px, 2fr) 1fr 1fr auto;
+  grid-template-columns: minmax(200px, 2fr) 1fr 1fr 1fr auto;
   align-items: end;
   min-width: 0;
 }
@@ -798,9 +819,14 @@ h1 {
 .admin-duty-row {
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(200px, 2fr) 1fr 1fr auto;
+  grid-template-columns: minmax(200px, 2fr) 1fr 1fr 1fr auto;
   align-items: end;
   min-width: 0;
+}
+
+.admin-duty-row.admin-duty-add {
+  width: 100%;
+  max-width: none;
 }
 
 .admin-duty-row.event-duty {
@@ -842,6 +868,14 @@ h1 {
 }
 
 .admin-duty-row.event-duty-add .ghost.small {
+  margin-top: 0;
+  height: 54px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.admin-duty-row.admin-duty-add .ghost.small {
   margin-top: 0;
   height: 54px;
   padding: 0 16px;

@@ -74,6 +74,7 @@ type EventDefinitionDuty = {
 	duty_definition_id: number;
 	default_points: number;
 	default_required_brothers: number;
+	default_time: string | null;
 };
 
 function App() {
@@ -124,7 +125,7 @@ function App() {
   const [weekRefreshTick, setWeekRefreshTick] = useState(0);
   const [adminEntity, setAdminEntity] = useState<
     "event_definitions" | "events" | "duty_definitions"
-  >("events");
+  >("event_definitions");
   const [adminItemId, setAdminItemId] = useState<number | "new">("new");
   const [adminNavTarget, setAdminNavTarget] = useState<number | null>(null);
   const [, setAdminLoading] = useState(false);
@@ -134,33 +135,43 @@ function App() {
   const [adminDuties, setAdminDuties] = useState<Duty[]>([]);
   const [eventDefinitionDuties, setEventDefinitionDuties] = useState<EventDefinitionDuty[]>([]);
   const [eventDefinitionDutyEdits, setEventDefinitionDutyEdits] = useState<
-    Record<number, { default_points: string; default_required_brothers: string }>
+    Record<number, { default_points: string; default_required_brothers: string; default_time: string }>
   >({});
   const [eventDefinitionDutyAdd, setEventDefinitionDutyAdd] = useState<{
     duty_definition_id: number | "";
     default_points: string;
     default_required_brothers: string;
-  }>({ duty_definition_id: "", default_points: "", default_required_brothers: "" });
+    default_time: string;
+  }>({ duty_definition_id: "", default_points: "", default_required_brothers: "", default_time: "" });
   const [eventDefinitionName, setEventDefinitionName] = useState("");
   const [eventDefinitionAdminPoints, setEventDefinitionAdminPoints] = useState("10");
+  const [eventDefinitionTemplateId, setEventDefinitionTemplateId] = useState<number | "">("");
   const [eventDefinitionDutyDrafts, setEventDefinitionDutyDrafts] = useState<
     Array<{
       duty_definition_id: number | "";
       default_points: string;
       default_required_brothers: string;
+      default_time: string;
     }>
-  >([{ duty_definition_id: "", default_points: "", default_required_brothers: "" }]);
+  >([{ duty_definition_id: "", default_points: "", default_required_brothers: "", default_time: "" }]);
   const [eventFormName, setEventFormName] = useState("");
   const [eventFormDefinitionId, setEventFormDefinitionId] = useState<number | "">("");
   const [eventFormDate, setEventFormDate] = useState("");
   const [eventFormStartTime, setEventFormStartTime] = useState("");
   const [eventFormEndTime, setEventFormEndTime] = useState("");
   const [eventIncludeDefaults, setEventIncludeDefaults] = useState(true);
+  const [eventEditDefinitionId, setEventEditDefinitionId] = useState<number | "">("");
+  const [eventEditName, setEventEditName] = useState("");
+  const [eventEditDate, setEventEditDate] = useState("");
+  const [eventEditStartTime, setEventEditStartTime] = useState("");
+  const [eventEditEndTime, setEventEditEndTime] = useState("");
+  const [eventEditSaving, setEventEditSaving] = useState(false);
   const [eventDutyEdits, setEventDutyEdits] = useState<Record<number, string>>({});
   const [eventDutyDraftDefinitionId, setEventDutyDraftDefinitionId] = useState<number | "">("");
   const [eventDutyDraftPoints, setEventDutyDraftPoints] = useState("");
   const [eventDutyDraftRequired, setEventDutyDraftRequired] = useState("");
   const [eventDutyDraftTime, setEventDutyDraftTime] = useState("");
+  const [isEditingEvent, setIsEditingEvent] = useState(false);
   const [dutyDefinitionTypeId, setDutyDefinitionTypeId] = useState<number | "">("");
   const [dutyDefinitionDescription, setDutyDefinitionDescription] = useState("");
   const [dutyDefinitionPoints, setDutyDefinitionPoints] = useState("");
@@ -326,6 +337,32 @@ function App() {
   const selectedEvent = selectedEventId
     ? events.find((event) => event.id === selectedEventId)
     : null;
+  const formatShortDate = (dateString: string) => {
+    if (!dateString) return "";
+    const [year, month, day] = dateString.split("-").map((part) => Number(part));
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+  const formatEventLabel = (event: EventItem) =>
+    `${event.name} · ${formatShortDate(event.date)} · ${formatTime(
+      event.start_time,
+    )} – ${formatTime(event.end_time)}`;
+
+  useEffect(() => {
+    if (selectedEvent) {
+      setEventEditDefinitionId(selectedEvent.event_definition_id);
+      setEventEditName(selectedEvent.name);
+      setEventEditDate(selectedEvent.date);
+      setEventEditStartTime(selectedEvent.start_time);
+      setEventEditEndTime(selectedEvent.end_time);
+    } else {
+      setEventEditDefinitionId("");
+      setEventEditName("");
+      setEventEditDate("");
+      setEventEditStartTime("");
+      setEventEditEndTime("");
+    }
+  }, [selectedEvent]);
 
   const roleOptions = [
     { key: "active" as const, label: "Active" },
@@ -475,7 +512,7 @@ function App() {
     if (adminEntity === "events") {
       return events.map((event) => ({
         id: event.id,
-        label: `${event.name} · ${event.date}`,
+        label: formatEventLabel(event),
       }));
     }
     if (adminEntity === "duty_definitions") {
@@ -675,22 +712,6 @@ function App() {
     return date.toLocaleDateString("en-US", { weekday: "long" });
   };
 
-  const getEventLockTime = (dateString: string) => {
-    const eventDate = parseDate(dateString);
-    const weekStart = new Date(eventDate);
-    weekStart.setDate(eventDate.getDate() - eventDate.getDay());
-    weekStart.setHours(0, 0, 0, 0);
-    const lockTime = new Date(weekStart);
-    lockTime.setDate(weekStart.getDate() + 1);
-    lockTime.setHours(20, 0, 0, 0);
-    return lockTime;
-  };
-
-  const canDropSelectedEvent = useMemo(() => {
-    if (!selectedEvent) return false;
-    return new Date() < getEventLockTime(selectedEvent.date);
-  }, [selectedEvent]);
-
   const formatDutyTime = (duty: Duty) => {
     return duty.time ? formatTime(duty.time) : "Time TBD";
   };
@@ -706,8 +727,14 @@ function App() {
   const resetEventDefinitionForm = () => {
     setEventDefinitionName("");
     setEventDefinitionAdminPoints("10");
+    setEventDefinitionTemplateId("");
     setEventDefinitionDutyDrafts([
-      { duty_definition_id: "", default_points: "", default_required_brothers: "" },
+      {
+        duty_definition_id: "",
+        default_points: "",
+        default_required_brothers: "",
+        default_time: "",
+      },
     ]);
     setEventDefinitionDuties([]);
     setEventDefinitionDutyEdits({});
@@ -715,6 +742,7 @@ function App() {
       duty_definition_id: "",
       default_points: "",
       default_required_brothers: "",
+      default_time: "",
     });
   };
 
@@ -825,14 +853,24 @@ function App() {
   useEffect(() => {
     if (view !== "admin") return;
     if (adminNavTarget) {
-      setAdminEntity("events");
+      setAdminEntity("event_definitions");
       setAdminItemId(adminNavTarget);
       setAdminNavTarget(null);
       return;
     }
-    setAdminEntity("events");
+    setAdminEntity("event_definitions");
     setAdminItemId("new");
   }, [view, adminNavTarget]);
+
+  useEffect(() => {
+    if (view !== "duties") {
+      setIsEditingEvent(false);
+    }
+  }, [view]);
+
+  useEffect(() => {
+    setIsEditingEvent(false);
+  }, [selectedEventId]);
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin || view !== "admin") return;
@@ -885,10 +923,12 @@ function App() {
     if (!selected) return;
     setEventDefinitionName(selected.name);
     setEventDefinitionAdminPoints(String(selected.admin_points));
+    setEventDefinitionTemplateId("");
     setEventDefinitionDutyAdd({
       duty_definition_id: "",
       default_points: "",
       default_required_brothers: "",
+      default_time: "",
     });
 
     refreshEventDefinitionDuties(selected.id).catch(() => {
@@ -898,15 +938,75 @@ function App() {
 
   useEffect(() => {
     if (adminEntity !== "event_definitions") return;
-    const next: Record<number, { default_points: string; default_required_brothers: string }> = {};
+    const next: Record<
+      number,
+      { default_points: string; default_required_brothers: string; default_time: string }
+    > = {};
     eventDefinitionDuties.forEach((duty) => {
       next[duty.id] = {
         default_points: String(duty.default_points),
         default_required_brothers: String(duty.default_required_brothers),
+        default_time: duty.default_time ?? "",
       };
     });
     setEventDefinitionDutyEdits(next);
   }, [adminEntity, eventDefinitionDuties]);
+
+  const handleEventDefinitionTemplateChange = async (value: string) => {
+    const nextId = value ? Number(value) : "";
+    setEventDefinitionTemplateId(nextId);
+    if (!nextId) {
+      setEventDefinitionDutyDrafts([
+        {
+          duty_definition_id: "",
+          default_points: "",
+          default_required_brothers: "",
+          default_time: "",
+        },
+      ]);
+      return;
+    }
+
+    const template = eventDefinitions.find((definition) => definition.id === nextId);
+    if (template) {
+      setEventDefinitionAdminPoints(String(template.admin_points));
+      setEventDefinitionName((prev) => (prev ? prev : `${template.name} Copy`));
+    }
+
+    try {
+      const data = await fetchJson<{ success: boolean; duties: EventDefinitionDuty[] }>(
+        `${paths.eventDefinitions.duties(nextId)}${buildQuery({ page: 1, page_size: 100 })}`,
+      );
+      const drafts =
+        data.duties?.map((duty) => ({
+          duty_definition_id: duty.duty_definition_id,
+          default_points: String(duty.default_points),
+          default_required_brothers: String(duty.default_required_brothers),
+          default_time: duty.default_time ?? "",
+        })) ?? [];
+      setEventDefinitionDutyDrafts(
+        drafts.length
+          ? drafts
+          : [
+              {
+                duty_definition_id: "",
+                default_points: "",
+                default_required_brothers: "",
+                default_time: "",
+              },
+            ],
+      );
+    } catch (err) {
+      setEventDefinitionDutyDrafts([
+        {
+          duty_definition_id: "",
+          default_points: "",
+          default_required_brothers: "",
+          default_time: "",
+        },
+      ]);
+    }
+  };
 
   useEffect(() => {
     if (adminEntity !== "events") return;
@@ -1043,7 +1143,11 @@ function App() {
 
   const updateEventDefinitionDutyDraft = (
     index: number,
-    field: "duty_definition_id" | "default_points" | "default_required_brothers",
+    field:
+      | "duty_definition_id"
+      | "default_points"
+      | "default_required_brothers"
+      | "default_time",
     value: string,
   ) => {
     setEventDefinitionDutyDrafts((prev) =>
@@ -1060,7 +1164,12 @@ function App() {
   const addEventDefinitionDutyDraft = () => {
     setEventDefinitionDutyDrafts((prev) => [
       ...prev,
-      { duty_definition_id: "", default_points: "", default_required_brothers: "" },
+      {
+        duty_definition_id: "",
+        default_points: "",
+        default_required_brothers: "",
+        default_time: "",
+      },
     ]);
   };
 
@@ -1092,7 +1201,10 @@ function App() {
 
         const hasPartialDuty = eventDefinitionDutyDrafts.some((duty) => {
           const hasAny =
-            duty.duty_definition_id || duty.default_points || duty.default_required_brothers;
+            duty.duty_definition_id ||
+            duty.default_points ||
+            duty.default_required_brothers ||
+            duty.default_time;
           const hasAll =
             duty.duty_definition_id &&
             duty.default_points.trim() !== "" &&
@@ -1115,6 +1227,7 @@ function App() {
             duty_definition_id: Number(duty.duty_definition_id),
             default_points: Number(duty.default_points),
             default_required_brothers: Number(duty.default_required_brothers),
+            default_time: duty.default_time?.trim() || null,
           }));
 
         if (adminItemId === "new") {
@@ -1197,6 +1310,7 @@ function App() {
             }),
           });
           await refreshEvents();
+          await refreshAdminDuties();
           setNotice("Event updated.");
         }
         return;
@@ -1285,6 +1399,7 @@ function App() {
       default_required_brothers:
         prev.default_required_brothers ||
         (definition ? String(definition.default_required_brothers) : ""),
+      default_time: prev.default_time || "",
     }));
   };
 
@@ -1294,6 +1409,7 @@ function App() {
     if (!draft) return;
     const defaultPoints = Number(draft.default_points);
     const defaultRequired = Number(draft.default_required_brothers);
+    const defaultTime = draft.default_time?.trim() || null;
     if (!Number.isFinite(defaultPoints) || !Number.isFinite(defaultRequired)) {
       setError("Default points and required brothers must be numbers.");
       return;
@@ -1307,6 +1423,7 @@ function App() {
         body: JSON.stringify({
           default_points: defaultPoints,
           default_required_brothers: defaultRequired,
+          default_time: defaultTime,
         }),
       });
       await refreshEventDefinitionDuties(adminItemId);
@@ -1339,6 +1456,29 @@ function App() {
     }
   };
 
+  const handleEventDefinitionRemove = async () => {
+    if (adminEntity !== "event_definitions" || adminItemId === "new") return;
+    const confirmed = window.confirm(
+      "Delete this event definition? This will remove all related events and duties.",
+    );
+    if (!confirmed) return;
+    setNotice(null);
+    setError(null);
+    try {
+      await fetchJson(paths.eventDefinitions.remove(adminItemId), { method: "DELETE" });
+      await Promise.all([refreshEventDefinitions(), refreshEvents(), refreshAdminDuties()]);
+      setNotice("Event definition deleted.");
+      setAdminItemId("new");
+      resetEventDefinitionForm();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || "Unable to delete event definition.");
+      } else {
+        setError("Unable to delete event definition.");
+      }
+    }
+  };
+
   const handleEventDefinitionDutyAdd = async () => {
     if (adminEntity !== "event_definitions" || adminItemId === "new") return;
     if (!eventDefinitionDutyAdd.duty_definition_id) {
@@ -1354,6 +1494,7 @@ function App() {
     }
     const defaultPoints = Number(eventDefinitionDutyAdd.default_points);
     const defaultRequired = Number(eventDefinitionDutyAdd.default_required_brothers);
+    const defaultTime = eventDefinitionDutyAdd.default_time?.trim() || null;
     if (!Number.isFinite(defaultPoints) || !Number.isFinite(defaultRequired)) {
       setError("Default points and required brothers must be numbers.");
       return;
@@ -1368,6 +1509,7 @@ function App() {
           duty_definition_id: Number(eventDefinitionDutyAdd.duty_definition_id),
           default_points: defaultPoints,
           default_required_brothers: defaultRequired,
+          default_time: defaultTime,
         }),
       });
       await refreshEventDefinitionDuties(adminItemId);
@@ -1376,6 +1518,7 @@ function App() {
         duty_definition_id: "",
         default_points: "",
         default_required_brothers: "",
+        default_time: "",
       });
     } catch (err) {
       if (err instanceof Error) {
@@ -1457,6 +1600,43 @@ function App() {
     }
   };
 
+  const handleEventDutyRemoveFromList = async (dutyId: number) => {
+    if (!selectedEventId) {
+      setError("Select an event first.");
+      return;
+    }
+    setNotice(null);
+    setError(null);
+    try {
+      await fetchJson(paths.duties.remove(dutyId), { method: "DELETE" });
+      const [dutyData, assignmentData] = await Promise.all([
+        fetchJson<{ success: boolean; duties: Duty[] }>(
+          `${paths.duties.list()}${buildQuery({
+            event_id: selectedEventId,
+            page: 1,
+            page_size: 100,
+          })}`,
+        ),
+        fetchJson<{ success: boolean; assignments: Assignment[] }>(
+          `${paths.assignments.list()}${buildQuery({
+            event_id: selectedEventId,
+            page: 1,
+            page_size: 100,
+          })}`,
+        ),
+      ]);
+      setDuties(dutyData.duties ?? []);
+      setAssignments(assignmentData.assignments ?? []);
+      setNotice("Duty removed.");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || "Unable to remove duty.");
+      } else {
+        setError("Unable to remove duty.");
+      }
+    }
+  };
+
   const handleEventDutyAdd = async () => {
     if (adminEntity !== "events" || adminItemId === "new") {
       setError("Create the event before adding duties.");
@@ -1509,6 +1689,29 @@ function App() {
     }
   };
 
+  const handleDutyDefinitionRemove = async () => {
+    if (adminEntity !== "duty_definitions" || adminItemId === "new") return;
+    const confirmed = window.confirm(
+      "Delete this duty definition? This will remove all related duties and assignments.",
+    );
+    if (!confirmed) return;
+    setNotice(null);
+    setError(null);
+    try {
+      await fetchJson(paths.dutyDefinitions.remove(adminItemId), { method: "DELETE" });
+      await refreshDutyDefinitions();
+      setNotice("Duty definition deleted.");
+      setAdminItemId("new");
+      resetDutyDefinitionForm();
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || "Unable to delete duty definition.");
+      } else {
+        setError("Unable to delete duty definition.");
+      }
+    }
+  };
+
   const handleSignUp = async (eventDutyId: number) => {
     if (!activeBrotherId) {
       setNotice("Unable to identify your account.");
@@ -1556,7 +1759,125 @@ function App() {
     }
   };
 
+  const handleEventTypeChange = async (value: string) => {
+    if (!selectedEvent) {
+      setError("Select an event first.");
+      return;
+    }
+    const nextId = value ? Number(value) : "";
+    if (!nextId) {
+      setEventEditDefinitionId("");
+      return;
+    }
+    if (nextId === selectedEvent.event_definition_id) {
+      setEventEditDefinitionId(nextId);
+      return;
+    }
+    const confirmed = window.confirm(
+      "Change event type? This will reset all duties for this event.",
+    );
+    if (!confirmed) {
+      setEventEditDefinitionId(selectedEvent.event_definition_id);
+      return;
+    }
+
+    setEventEditDefinitionId(nextId);
+    setNotice(null);
+    setError(null);
+    try {
+      await fetchJson(paths.events.update(selectedEvent.id), {
+        method: "PUT",
+        body: JSON.stringify({
+          name: selectedEvent.name,
+          event_definition_id: nextId,
+          date: selectedEvent.date,
+          start_time: selectedEvent.start_time,
+          end_time: selectedEvent.end_time,
+        }),
+      });
+      await refreshEvents();
+      const [dutyData, assignmentData] = await Promise.all([
+        fetchJson<{ success: boolean; duties: Duty[] }>(
+          `${paths.duties.list()}${buildQuery({
+            event_id: selectedEvent.id,
+            page: 1,
+            page_size: 100,
+          })}`,
+        ),
+        fetchJson<{ success: boolean; assignments: Assignment[] }>(
+          `${paths.assignments.list()}${buildQuery({
+            event_id: selectedEvent.id,
+            page: 1,
+            page_size: 100,
+          })}`,
+        ),
+      ]);
+      setDuties(dutyData.duties ?? []);
+      setAssignments(assignmentData.assignments ?? []);
+      setNotice("Event type updated.");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || "Unable to update event type.");
+      } else {
+        setError("Unable to update event type.");
+      }
+      setEventEditDefinitionId(selectedEvent.event_definition_id);
+    }
+  };
+
+  const handleEventEditSave = async () => {
+    if (!selectedEvent) {
+      setError("Select an event first.");
+      return;
+    }
+    const name = eventEditName.trim();
+    if (!name) {
+      setError("Enter an event name.");
+      return;
+    }
+    if (!eventEditDate || !eventEditStartTime || !eventEditEndTime) {
+      setError("Enter the date, start time, and end time.");
+      return;
+    }
+
+    setNotice(null);
+    setError(null);
+    setEventEditSaving(true);
+    try {
+      await fetchJson(paths.events.update(selectedEvent.id), {
+        method: "PUT",
+        body: JSON.stringify({
+          name,
+          event_definition_id:
+            typeof eventEditDefinitionId === "number"
+              ? eventEditDefinitionId
+              : selectedEvent.event_definition_id,
+          date: eventEditDate,
+          start_time: eventEditStartTime,
+          end_time: eventEditEndTime,
+        }),
+      });
+      await refreshEvents();
+      setNotice("Event updated.");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || "Unable to update event.");
+      } else {
+        setError("Unable to update event.");
+      }
+    } finally {
+      setEventEditSaving(false);
+    }
+  };
+
   const handleDropAssignment = async (assignmentId: number) => {
+    if (!selectedEventId) {
+      setError("Select an event first.");
+      return;
+    }
+    if (!window.confirm("Drop this duty?")) {
+      return;
+    }
     setNotice(null);
     setError(null);
     setDroppingAssignmentId(assignmentId);
@@ -1580,10 +1901,12 @@ function App() {
       ]);
       setDuties(dutyData.duties ?? []);
       setAssignments(assignmentData.assignments ?? []);
-      setNotice("Removed from duty.");
+      setNotice("Dropped duty.");
     } catch (err) {
       if (err instanceof Error) {
-        setNotice(err.message || "Unable to remove assignment.");
+        setError(err.message || "Unable to drop duty.");
+      } else {
+        setError("Unable to drop duty.");
       }
     } finally {
       setDroppingAssignmentId(null);
@@ -1591,12 +1914,6 @@ function App() {
   };
 
   const handleEventClick = (eventId: number, clickEvent: MouseEvent<HTMLButtonElement>) => {
-    if (isAdmin && (clickEvent.ctrlKey || clickEvent.metaKey)) {
-      clickEvent.preventDefault();
-      setAdminNavTarget(eventId);
-      setView("admin");
-      return;
-    }
     setSelectedEventId(eventId);
     setView("duties");
   };
@@ -1776,18 +2093,99 @@ function App() {
                       <option value="">Select</option>
                       {events.map((event) => (
                         <option key={event.id} value={event.id}>
-                          {event.name} · {event.date}
+                          {formatEventLabel(event)}
                         </option>
                       ))}
                     </select>
                   </div>
+                  {isAdmin && isEditingEvent ? (
+                    <div className="select-pill">
+                      <label htmlFor="event-type">Event type</label>
+                      <select
+                        id="event-type"
+                        value={eventEditDefinitionId}
+                        onChange={(event) => handleEventTypeChange(event.target.value)}
+                        disabled={!selectedEventId}
+                      >
+                        <option value="">Select</option>
+                        {eventDefinitions.map((definition) => (
+                          <option key={definition.id} value={definition.id}>
+                            {definition.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
                 </div>
                 <div className="action-group">
                   <button className="primary" type="button" disabled>
                     Share Duty List
                   </button>
+                  {isAdmin ? (
+                    <button
+                      className="ghost"
+                      type="button"
+                      onClick={() => setIsEditingEvent((prev) => !prev)}
+                    >
+                      Edit event
+                    </button>
+                  ) : null}
                 </div>
               </div>
+              {isAdmin && isEditingEvent ? (
+                <div className="event-edit">
+                  <div className="event-edit-grid">
+                    <div className="select-pill">
+                      <label htmlFor="event-edit-name">Event name</label>
+                      <input
+                        id="event-edit-name"
+                        className="text-input"
+                        type="text"
+                        value={eventEditName}
+                        onChange={(event) => setEventEditName(event.target.value)}
+                      />
+                    </div>
+                    <div className="select-pill">
+                      <label htmlFor="event-edit-date">Date</label>
+                      <input
+                        id="event-edit-date"
+                        className="text-input"
+                        type="date"
+                        value={eventEditDate}
+                        onChange={(event) => setEventEditDate(event.target.value)}
+                      />
+                    </div>
+                    <div className="select-pill">
+                      <label htmlFor="event-edit-start">Start time</label>
+                      <input
+                        id="event-edit-start"
+                        className="text-input"
+                        type="time"
+                        value={eventEditStartTime}
+                        onChange={(event) => setEventEditStartTime(event.target.value)}
+                      />
+                    </div>
+                    <div className="select-pill">
+                      <label htmlFor="event-edit-end">End time</label>
+                      <input
+                        id="event-edit-end"
+                        className="text-input"
+                        type="time"
+                        value={eventEditEndTime}
+                        onChange={(event) => setEventEditEndTime(event.target.value)}
+                      />
+                    </div>
+                    <button
+                      className="primary action"
+                      type="button"
+                      onClick={handleEventEditSave}
+                      disabled={eventEditSaving}
+                    >
+                      {eventEditSaving ? "Saving..." : "Save event"}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="duties">
                 {loading || loadingDuties ? (
@@ -1811,31 +2209,18 @@ function App() {
                           const activeAssignment = activeBrotherId
                             ? assigned.find((assignment) => assignment.brother_id === activeBrotherId)
                             : null;
-                          const isAssigned = Boolean(activeAssignment);
                           const isSignedUp = activeAssignment?.status_name === "signed_up";
-                          const canDrop =
-                            Boolean(activeAssignment) && isSignedUp && canDropSelectedEvent;
                           const isUnlocked = selectedEvent?.duties_unlocked === 1;
-                          const disabled =
-                            !activeBrotherId || !isUnlocked || isFull || isAssigned || isSignedUp;
+                          const actionDisabled = isSignedUp
+                            ? !isUnlocked || droppingAssignmentId === activeAssignment?.id
+                            : !activeBrotherId ||
+                              !isUnlocked ||
+                              isFull ||
+                              Boolean(activeAssignment) ||
+                              submittingDutyId === duty.id;
 
                           return (
                             <div className="duty-row" key={duty.id}>
-                              {isSignedUp ? (
-                                <button
-                                  className="duty-remove"
-                                  type="button"
-                                  onClick={() =>
-                                    activeAssignment
-                                      ? handleDropAssignment(activeAssignment.id)
-                                      : undefined
-                                  }
-                                  disabled={!canDrop || droppingAssignmentId === activeAssignment?.id}
-                                  aria-label="Remove sign up"
-                                >
-                                  ×
-                                </button>
-                              ) : null}
                               <div>
                                 <p className="duty-name">{duty.description}</p>
                                 <p className="duty-meta">
@@ -1858,11 +2243,31 @@ function App() {
                                 <button
                                   className="ghost"
                                   type="button"
-                                  onClick={() => handleSignUp(duty.id)}
-                                  disabled={disabled || submittingDutyId === duty.id}
+                                  onClick={() => {
+                                    if (isSignedUp && activeAssignment) {
+                                      handleDropAssignment(activeAssignment.id);
+                                    } else {
+                                      handleSignUp(duty.id);
+                                    }
+                                  }}
+                                  disabled={actionDisabled}
                                 >
-                                  {!isUnlocked ? "Locked" : "Sign up"}
+                                  {!isUnlocked
+                                    ? "Locked"
+                                    : isSignedUp
+                                      ? "Drop duty"
+                                      : "Sign up"}
                                 </button>
+                                {isAdmin && isEditingEvent ? (
+                                  <button
+                                    className="duty-admin-remove"
+                                    type="button"
+                                    aria-label="Remove duty"
+                                    onClick={() => handleEventDutyRemoveFromList(duty.id)}
+                                  >
+                                    ×
+                                  </button>
+                                ) : null}
                               </div>
                             </div>
                           );
@@ -1878,7 +2283,19 @@ function App() {
           {view === "calendar" ? (
             <div className="calendar">
               <div className="calendar-section current-week">
-                <div className="calendar-section-title">This Week Events</div>
+                <div className="calendar-section-header">
+                  <div className="calendar-section-title">This Week Events</div>
+                  {isAdmin ? (
+                    <div className="admin-quick-actions">
+                      <button className="ghost" type="button" onClick={handleUnlockWeek}>
+                        Unlock this week
+                      </button>
+                      <button className="ghost" type="button" onClick={handleAssignWeek}>
+                        Assign this week
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
                 {weekEvents.length === 0 ? (
                   <div className="empty">No events scheduled this week.</div>
                 ) : (
@@ -2145,14 +2562,6 @@ function App() {
           {view === "admin" ? (
             <div className="admin">
               <div className="admin-controls">
-                <div className="admin-quick-actions">
-                  <button className="ghost" type="button" onClick={handleUnlockWeek}>
-                    Unlock this week
-                  </button>
-                  <button className="ghost" type="button" onClick={handleAssignWeek}>
-                    Assign this week
-                  </button>
-                </div>
                 <div className="select-pill">
                   <label htmlFor="admin-entity">Manage</label>
                   <select
@@ -2167,13 +2576,14 @@ function App() {
                       )
                     }
                   >
-                    <option value="events">Events</option>
                     <option value="event_definitions">Event definitions</option>
                     <option value="duty_definitions">Duty definitions</option>
                   </select>
                 </div>
                 <div className="select-pill">
-                  <label htmlFor="admin-item">Item</label>
+                  <label htmlFor="admin-item">
+                    {adminEntity === "events" ? "Event" : "Item"}
+                  </label>
                   <select
                     id="admin-item"
                     value={adminItemId === "new" ? "new" : String(adminItemId)}
@@ -2190,6 +2600,27 @@ function App() {
                     ))}
                   </select>
                 </div>
+                {adminEntity === "events" ? (
+                  <div className="select-pill">
+                    <label htmlFor="admin-event-type">Event type</label>
+                    <select
+                      id="admin-event-type"
+                      value={eventFormDefinitionId}
+                      onChange={(event) =>
+                        setEventFormDefinitionId(
+                          event.target.value ? Number(event.target.value) : "",
+                        )
+                      }
+                    >
+                      <option value="">Select</option>
+                      {eventDefinitions.map((definition) => (
+                        <option key={definition.id} value={definition.id}>
+                          {definition.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
               </div>
 
               {adminEntity === "event_definitions" ? (
@@ -2226,6 +2657,25 @@ function App() {
                           onChange={(event) => setEventDefinitionAdminPoints(event.target.value)}
                         />
                       </div>
+                      {adminItemId === "new" ? (
+                        <div className="select-pill">
+                          <label htmlFor="event-def-template">Select from template</label>
+                          <select
+                            id="event-def-template"
+                            value={eventDefinitionTemplateId}
+                            onChange={(event) =>
+                              handleEventDefinitionTemplateChange(event.target.value)
+                            }
+                          >
+                            <option value="">None</option>
+                            {eventDefinitions.map((definition) => (
+                              <option key={definition.id} value={definition.id}>
+                                {definition.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : null}
                     </div>
 
                     {adminItemId === "new" ? (
@@ -2272,12 +2722,12 @@ function App() {
                                   placeholder="e.g. 5"
                                 />
                               </div>
-                              <div className="select-pill">
-                                <label>Required brothers</label>
-                                <input
-                                  className="text-input"
-                                  type="number"
-                                  value={duty.default_required_brothers}
+                            <div className="select-pill">
+                              <label>Required brothers</label>
+                              <input
+                                className="text-input"
+                                type="number"
+                                value={duty.default_required_brothers}
                                   onChange={(event) =>
                                     updateEventDefinitionDutyDraft(
                                       index,
@@ -2286,6 +2736,21 @@ function App() {
                                     )
                                   }
                                   placeholder="e.g. 2"
+                                />
+                              </div>
+                              <div className="select-pill">
+                                <label>Time</label>
+                                <input
+                                  className="text-input"
+                                  type="time"
+                                  value={duty.default_time}
+                                  onChange={(event) =>
+                                    updateEventDefinitionDutyDraft(
+                                      index,
+                                      "default_time",
+                                      event.target.value,
+                                    )
+                                  }
                                 />
                               </div>
                               <button
@@ -2305,7 +2770,76 @@ function App() {
                       </div>
                     ) : (
                       <div className="admin-subsection">
-                        <div className="admin-subtitle">Default duties</div>
+                        <div className="admin-subtitle">Add default duty</div>
+                        <div className="admin-duty-row admin-duty-add">
+                          <div className="select-pill">
+                            <label>Duty definition</label>
+                            <select
+                              value={eventDefinitionDutyAdd.duty_definition_id || ""}
+                              onChange={(event) =>
+                                handleEventDefinitionDutyAddDefinitionChange(event.target.value)
+                              }
+                            >
+                              <option value="">Select</option>
+                              {sortedDutyDefinitions.map((definition) => (
+                                <option key={definition.id} value={definition.id}>
+                                  {definition.description} ·{" "}
+                                  {dutyTypeNameById.get(definition.duty_type_id) ??
+                                    `Type ${definition.duty_type_id}`}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="select-pill">
+                            <label>Points</label>
+                            <input
+                              className="text-input"
+                              type="number"
+                              value={eventDefinitionDutyAdd.default_points}
+                              onChange={(event) =>
+                                setEventDefinitionDutyAdd((prev) => ({
+                                  ...prev,
+                                  default_points: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="select-pill">
+                            <label>Slots</label>
+                            <input
+                              className="text-input"
+                              type="number"
+                              value={eventDefinitionDutyAdd.default_required_brothers}
+                              onChange={(event) =>
+                                setEventDefinitionDutyAdd((prev) => ({
+                                  ...prev,
+                                  default_required_brothers: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="select-pill">
+                            <label>Time</label>
+                            <input
+                              className="text-input"
+                              type="time"
+                              value={eventDefinitionDutyAdd.default_time}
+                              onChange={(event) =>
+                                setEventDefinitionDutyAdd((prev) => ({
+                                  ...prev,
+                                  default_time: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <button
+                            className="ghost small"
+                            type="button"
+                            onClick={handleEventDefinitionDutyAdd}
+                          >
+                            Add
+                          </button>
+                        </div>
                         <div className="admin-group-stack">
                           {eventDefinitionDutyGroups.map((group) => (
                             <div className="admin-duty-group" key={group.label}>
@@ -2355,6 +2889,9 @@ function App() {
                                                   default_required_brothers:
                                                     prev[duty.id]?.default_required_brothers ??
                                                     String(duty.default_required_brothers),
+                                                  default_time:
+                                                    prev[duty.id]?.default_time ??
+                                                    (duty.default_time ?? ""),
                                                 },
                                               }))
                                             }
@@ -2377,6 +2914,31 @@ function App() {
                                                     prev[duty.id]?.default_points ??
                                                     String(duty.default_points),
                                                   default_required_brothers: event.target.value,
+                                                  default_time:
+                                                    prev[duty.id]?.default_time ??
+                                                    (duty.default_time ?? ""),
+                                                },
+                                              }))
+                                            }
+                                          />
+                                        </div>
+                                        <div className="select-pill">
+                                          <label>Time</label>
+                                          <input
+                                            className="text-input"
+                                            type="time"
+                                            value={edit?.default_time ?? duty.default_time ?? ""}
+                                            onChange={(event) =>
+                                              setEventDefinitionDutyEdits((prev) => ({
+                                                ...prev,
+                                                [duty.id]: {
+                                                  default_points:
+                                                    prev[duty.id]?.default_points ??
+                                                    String(duty.default_points),
+                                                  default_required_brothers:
+                                                    prev[duty.id]?.default_required_brothers ??
+                                                    String(duty.default_required_brothers),
+                                                  default_time: event.target.value,
                                                 },
                                               }))
                                             }
@@ -2406,67 +2968,19 @@ function App() {
                             </div>
                           ))}
                         </div>
-                        <div className="admin-divider" />
-                        <div className="admin-subtitle">Add default duty</div>
-                        <div className="admin-duty-row admin-duty-add">
-                          <div className="select-pill">
-                            <label>Duty definition</label>
-                            <select
-                              value={eventDefinitionDutyAdd.duty_definition_id || ""}
-                              onChange={(event) =>
-                                handleEventDefinitionDutyAddDefinitionChange(event.target.value)
-                              }
-                            >
-                              <option value="">Select</option>
-                              {sortedDutyDefinitions.map((definition) => (
-                                <option key={definition.id} value={definition.id}>
-                                  {definition.description} ·{" "}
-                                  {dutyTypeNameById.get(definition.duty_type_id) ??
-                                    `Type ${definition.duty_type_id}`}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="select-pill">
-                            <label>Points</label>
-                            <input
-                              className="text-input"
-                              type="number"
-                              value={eventDefinitionDutyAdd.default_points}
-                              onChange={(event) =>
-                                setEventDefinitionDutyAdd((prev) => ({
-                                  ...prev,
-                                  default_points: event.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="select-pill">
-                            <label>Slots</label>
-                            <input
-                              className="text-input"
-                              type="number"
-                              value={eventDefinitionDutyAdd.default_required_brothers}
-                              onChange={(event) =>
-                                setEventDefinitionDutyAdd((prev) => ({
-                                  ...prev,
-                                  default_required_brothers: event.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <button
-                            className="ghost small"
-                            type="button"
-                            onClick={handleEventDefinitionDutyAdd}
-                          >
-                            Add
-                          </button>
-                        </div>
                       </div>
                     )}
 
                     <div className="admin-actions">
+                      {adminItemId !== "new" ? (
+                        <button
+                          className="ghost danger"
+                          type="button"
+                          onClick={handleEventDefinitionRemove}
+                        >
+                          Delete event definition
+                        </button>
+                      ) : null}
                       <button className="primary" type="submit">
                         {adminItemId === "new" ? "Create event definition" : "Update event definition"}
                       </button>
@@ -2496,25 +3010,6 @@ function App() {
                           onChange={(event) => setEventFormName(event.target.value)}
                           placeholder="e.g. Philigher"
                         />
-                      </div>
-                      <div className="select-pill">
-                        <label htmlFor="event-definition">Event definition</label>
-                        <select
-                          id="event-definition"
-                          value={eventFormDefinitionId}
-                          onChange={(event) =>
-                            setEventFormDefinitionId(
-                              event.target.value ? Number(event.target.value) : "",
-                            )
-                          }
-                        >
-                          <option value="">Select</option>
-                          {eventDefinitions.map((definition) => (
-                            <option key={definition.id} value={definition.id}>
-                              {definition.name}
-                            </option>
-                          ))}
-                        </select>
                       </div>
                       <div className="select-pill">
                         <label htmlFor="event-date">Date</label>
@@ -2756,6 +3251,15 @@ function App() {
                       </div>
                     </div>
                     <div className="admin-actions">
+                      {adminItemId !== "new" ? (
+                        <button
+                          className="ghost danger"
+                          type="button"
+                          onClick={handleDutyDefinitionRemove}
+                        >
+                          Delete duty definition
+                        </button>
+                      ) : null}
                       <button className="primary" type="submit">
                         {adminItemId === "new" ? "Create duty definition" : "Update duty definition"}
                       </button>
